@@ -1,3 +1,13 @@
+# Projects
+.vscode/
+000-*
+*.png
+*.bmp
+*.jpg
+
+# Git
+.git/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
