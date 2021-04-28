@@ -60,7 +60,7 @@
 
 ### 生成对抗网络
 
-**CycleGAN**（夏天 $\to$ 冬天）
+**CycleGAN**（夏天 <-> 冬天）
 
 ![summer2winter](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/04/1619614350-summer2winter.png)
 
