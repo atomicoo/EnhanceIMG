@@ -8,7 +8,7 @@ from retinex import *
 from retinex.enhancer import *
 
 # %%
-img_bgr = cv2.imread("2_1_2.png")
+img_bgr = cv2.imread("Madison.png")
 cv2.imshow('BGR', img_bgr)
 
 # %%
@@ -115,9 +115,9 @@ cv2.imshow('BGR', img_bgr)
 
 # %%
 sigma_list = [15, 80, 250]
-img_sobmsr = AttnMSR(img_bgr, sigma_list, 10)
-cv2.imshow("AttnMSR", img_sobmsr)
-# cv2.imwrite("AttnMSR.bmp", img_sobmsr)
+img_attnmsr = AttnMSR(img_bgr, sigma_list, 10)
+cv2.imshow("AttnMSR", img_attnmsr)
+# cv2.imwrite("AttnMSR.bmp", img_attnmsr)
 
 # %%
 from matplotlib import pyplot as plt
@@ -128,10 +128,13 @@ for i, cl in enumerate(color):
     plt.plot(hist, color=cl) 
     plt.xlim([0,256])
 for i, cl in enumerate(color): 
-    hist = cv2.calcHist([img_sobmsr], [i], None, [256], [0,256]) 
+    hist = cv2.calcHist([img_attnmsr], [i], None, [256], [0,256]) 
     plt.plot(hist, '--', color=cl) 
     plt.xlim([0,256])
 plt.show()
 
 # %%
 cv2.waitKey()
+
+# %%
+# cv2.imwrite("enlighten.png", np.concatenate((img_bgr, img_attnmsr), axis=1))
