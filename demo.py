@@ -5,9 +5,10 @@ from noises import *
 from filters import *
 from histeq import *
 from retinex import *
+from retinex.enhancer import *
 
 # %%
-img_bgr = cv2.imread("Madison.png")
+img_bgr = cv2.imread("2_1_2.png")
 cv2.imshow('BGR', img_bgr)
 
 # %%
@@ -113,12 +114,10 @@ cv2.imshow('BGR', img_bgr)
 # cv2.imshow("MSRCP", img_msrcp)
 
 # %%
-from retinex.enhancer import SobMSR
-
 sigma_list = [15, 80, 250]
-img_sobmsr = SobMSR(img_bgr, sigma_list, 10)
-cv2.imshow("SobMSR", img_sobmsr)
-# cv2.imwrite("SobMSR.bmp", img_sobmsr)
+img_sobmsr = AttnMSR(img_bgr, sigma_list, 10)
+cv2.imshow("AttnMSR", img_sobmsr)
+# cv2.imwrite("AttnMSR.bmp", img_sobmsr)
 
 # %%
 from matplotlib import pyplot as plt

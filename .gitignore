@@ -1,9 +1,14 @@
 # Projects
 .vscode/
+awegan/ckpts/
+awegan/data/
+awegan/images/
+images/
 000-*
 *.png
 *.bmp
 *.jpg
+!Madison.png
 
 # Git
 .git/

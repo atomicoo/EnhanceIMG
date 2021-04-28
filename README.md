@@ -8,6 +8,7 @@
 
 ```
 .
+|--- awegan/      # GAN相关算法
 |--- colorspace/  # 色彩空间转换
 |--- filters/     # 各种滤波器
 |--- histeq/      # 直方图均衡算法
