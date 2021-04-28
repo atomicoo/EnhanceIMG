@@ -54,7 +54,7 @@
 
 ![retinex](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/04/retinex.png)
 
-**Retinex 增强**（原图|AttnMSR）
+**Retinex 增强**（原图|AttnMSR|AttnMSR+MSS）
 
 ![enlighten](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/04/enlighten.png)
 

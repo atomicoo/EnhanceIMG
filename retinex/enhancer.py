@@ -6,6 +6,8 @@ from . import multi_scale_retinex
 
 
 def AttnMSR(img, sigma_list, threshold=10, a1=0.4, a2=0.5, b=0.5):
+    """边缘注意力加权的增强多尺度Retinex算法
+    """
     # TODO: 待完善
 
     H, L, S = cv2.split(bgr2hls(img))
@@ -32,3 +34,26 @@ def AttnMSR(img, sigma_list, threshold=10, a1=0.4, a2=0.5, b=0.5):
     img_sobmsr = cv2.merge([H, L_prime, S])
 
     return hls2bgr(img_sobmsr)
+
+def multi_scale_sharpen(img, w1=0.5, w2=0.5, w3=0.25, radius=3):
+    """多尺度细节提升算法
+    """
+
+    img = np.float64(img)
+
+    G1 = gaussian_filter(img, (radius,radius), 1.0)
+    # cv2.imshow("Gau1", cv2.convertScaleAbs(G1))
+    G2 = gaussian_filter(img, (radius*2-1,radius*2-1), 2.0)
+    # cv2.imshow("Gau2", cv2.convertScaleAbs(G2))
+    G3 = gaussian_filter(img, (radius*4-1,radius*4-1), 4.0)
+    # cv2.imshow("Gau3", cv2.convertScaleAbs(G3))
+
+    D1 = (1-w1*np.sign(img-G1)) * (img-G1)
+    # cv2.imshow("Det1", D1)
+    D2 = w2 * (G1-G2)
+    # cv2.imshow("Det2", D2)
+    D3 = w3 * (G2-G3)
+    # cv2.imshow("Det3", D3)
+    img_mss = img + D1 + D2 + D3
+ 
+    return cv2.convertScaleAbs(img_mss)

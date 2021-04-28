@@ -49,16 +49,16 @@ cv2.imshow('BGR', img_bgr)
 # # cv2.imshow("MDB-5", img_md)
 
 # %%
-# img_gf = gaussian_filter(img_bgr, kernel_size=(3,3), sigmaX=0)
+# img_gf = gaussian_filter(img_bgr, kernel_size=(3,3), sigma=0)
 # cv2.imshow("GSB-3", img_gf)
-# img_gf = gaussian_filter(img_bgr, kernel_size=(5,5), sigmaX=0)
+# img_gf = gaussian_filter(img_bgr, kernel_size=(5,5), sigma=0)
 # cv2.imshow("GSB-5", img_gf)
 
 # %%
 # img_bf = cv2.bilateralFilter(img_gs, d=0, sigmaColor=40, sigmaSpace=10)
 # cv2.imshow("BFX", img_bf)
 
-# joint = gaussian_filter(img_bgr, kernel_size=(3,3), sigmaX=0)
+# joint = gaussian_filter(img_bgr, kernel_size=(3,3), sigma=0)
 # img_jb = joint_bilateral_filter(img_bgr, joint, d=0, sigmaColor=40, sigmaSpace=10)
 # cv2.imshow("JBF", img_jb)
 

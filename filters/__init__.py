@@ -11,10 +11,10 @@ def median_filter(img, kernel_size):
     """
     return cv2.medianBlur(img, ksize=kernel_size)
 
-def gaussian_filter(img, kernel_size, sigmaX=0, sigmaY=0):
+def gaussian_filter(img, kernel_size, sigma=0):
     """take value weighted by pixel distance in the neighbourhood of center pixel.
     """
-    return cv2.GaussianBlur(img, ksize=kernel_size, sigmaX=sigmaX, sigmaY=sigmaY)
+    return cv2.GaussianBlur(img, ksize=kernel_size, sigmaX=sigma, sigmaY=sigma)
 
 def bilateral_filter(img, d=0, sigmaColor=40, sigmaSpace=10):
     """take value weighted by pixel+gray distance in the neighbourhood of center pixel.

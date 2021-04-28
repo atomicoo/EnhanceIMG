@@ -180,8 +180,8 @@ if __name__ == '__main__':
     adversarial_loss = torch.nn.BCELoss().to(device)
 
     # Initialize generator and discriminator
-    generator = Generator().to(device)
-    discriminator = Discriminator().to(device)
+    generator = Generator(latent_dim=opt.latent_dim, img_size=opt.img_size, channels=opt.channels).to(device)
+    discriminator = Discriminator(img_size=opt.img_size, channels=opt.channels).to(device)
 
     if (device.type == 'cuda') and (opt.n_gpu > 1):
         generator = nn.DataParallel(generator, list(range(opt.n_gpu)))
