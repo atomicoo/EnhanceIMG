@@ -1,9 +1,9 @@
 # Projects
 .vscode/
-awegan/ckpts/
-awegan/data/
-awegan/images/
-images/
+**/ckpts/
+**/data/
+**/images/
+**/results/
 000-*
 *.png
 *.bmp

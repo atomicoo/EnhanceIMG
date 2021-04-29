@@ -8,13 +8,24 @@
 
 ```
 .
+|--- asserts/
 |--- awegan/      # GAN相关算法
+     |--- __init__.py
+     |--- cyclegan.py
+     |--- dcgan.py
+     |--- selfgan.py
+     |--- ...
 |--- colorspace/  # 色彩空间转换
 |--- filters/     # 各种滤波器
 |--- histeq/      # 直方图均衡算法
 |--- noises/      # 噪声
 |--- retinex/     # Retinex系列算法
+     |--- __init__.py
+     |--- enhancer.py
+     |--- retinex_net.py
+     |--- ...
 |--- utils/       # 一些方法
+|--- .gitignore
 |--- demo.py
 |--- LICENSE
 |--- Madison.png
@@ -58,9 +69,15 @@
 
 ![enlighten](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/04/1619614316-enlighten.png)
 
+### 神经网络
+
+**RetinexNet**（原图|RetinexNet）
+
+![retinexnet](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/04/1619668202-retinexnet.png)
+
 ### 生成对抗网络
 
-**CycleGAN**（夏天 <-> 冬天）
+**CycleGAN**（夏天 <=> 冬天）
 
 ![summer2winter](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/04/1619614350-summer2winter.png)
 
