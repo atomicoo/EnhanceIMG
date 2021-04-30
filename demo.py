@@ -117,7 +117,8 @@ cv2.imshow('BGR', img_bgr)
 sigma_list = [15, 80, 250]
 img_attnmsr = AttnMSR(img_bgr, sigma_list, 10)
 cv2.imshow("AttnMSR", img_attnmsr)
-# cv2.imwrite("AttnMSR.bmp", img_attnmsr)
+img_mss = multi_scale_sharpen(img_attnmsr)
+cv2.imshow("AttnMSR+MSS", img_mss)
 
 # %%
 from matplotlib import pyplot as plt
@@ -137,4 +138,4 @@ plt.show()
 cv2.waitKey()
 
 # %%
-# cv2.imwrite("enlighten.png", np.concatenate((img_bgr, img_attnmsr), axis=1))
+# cv2.imwrite("enlighten.png", np.concatenate((img_bgr, img_attnmsr, img_mss), axis=1))

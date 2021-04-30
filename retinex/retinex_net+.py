@@ -13,7 +13,8 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.autograd import Variable
-
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as transforms
 from PIL import Image
 
 
@@ -43,6 +44,78 @@ class Processor(nn.Module):
         img = np.clip(img * 255.0, 0, 255.0).astype('uint8')
         img = np.ascontiguousarray(img)
         return img
+
+
+class PairDataset(Dataset):
+    def __init__(self, root, transform=None, augmentation=True, mode='train'):
+        super(PairDataset, self).__init__()
+
+        self.name = 'PairDataset'
+        self.mode = mode
+        self.patch_size = None
+        self.augmentation = augmentation
+
+        _transforms = []
+        for trans in transform:
+            if isinstance(trans, transforms.RandomCrop):
+                self.patch_size = trans.size
+            else:
+                _transforms.append(trans)
+        self.transform = transforms.ToTensor() if transform is None else transforms.Compose(_transforms)
+
+        # self.files_A = sorted(glob(os.path.join(root, '%sA' % mode, '*.*')))
+        # self.files_B = sorted(glob(os.path.join(root, '%sB' % mode, '*.*')))
+        self.files_A = sorted(glob(os.path.join(root, mode, 'low', '*.*')))
+        self.files_B = sorted(glob(os.path.join(root, mode, 'high', '*.*')))
+
+        assert len(self.files_A) == len(self.files_B), "Images of A and B must be matched"
+
+    def __getitem__(self, index):
+        A_path = self.files_A[index % len(self.files_A)]
+        B_path = self.files_B[index % len(self.files_B)]
+
+        A_img = Image.open(A_path).convert('RGB')
+        B_img = Image.open(A_path.replace("low", "high")).convert('RGB')
+
+        item_A = self.transform(A_img).permute(1, 2, 0).contiguous()
+        item_B = self.transform(B_img).permute(1, 2, 0).contiguous()
+
+        assert item_A.size() == item_B.size(), "Size of A and B doesn't matched"
+        h, w, c = item_A.size()
+
+        if self.patch_size is not None:
+            x = random.randint(0, h - self.patch_size[0])
+            y = random.randint(0, w - self.patch_size[1])
+            item_A = item_A[x: x + self.patch_size[0], y: y + self.patch_size[1], :]
+            item_B = item_B[x: x + self.patch_size[0], y: y + self.patch_size[1], :]
+
+        if self.augmentation:
+            item_A = item_A.cpu().numpy()
+            item_B = item_B.cpu().numpy()
+
+            # Data augmentation
+            # TODO: Realize this with pytorch
+            if random.random() < 0.5:
+                item_A = np.flipud(item_A)
+                item_B= np.flipud(item_B)
+            if random.random() < 0.5:
+                item_A = np.fliplr(item_A)
+                item_B= np.fliplr(item_B)
+            rot_type = random.randint(1, 4)
+            if random.random() < 0.5:
+                item_A = np.rot90(item_A, rot_type)
+                item_B= np.rot90(item_B, rot_type)
+
+            item_A = torch.from_numpy(np.ascontiguousarray(item_A))
+            item_B = torch.from_numpy(np.ascontiguousarray(item_B))
+
+        item_A = item_A.permute(2, 0, 1).contiguous()
+        item_B = item_B.permute(2, 0, 1).contiguous()
+
+        return {'A': item_A, 'B': item_B}
+
+    def __len__(self):
+        return max(len(self.files_A), len(self.files_B))
 
 
 class DecomNet(nn.Module):
@@ -157,9 +230,14 @@ class RetinexNet(nn.Module):
                 print("No pretrained model to restore!")
 
     def forward(self, input_low, input_high=None):
+        input_low = torch.from_numpy(input_low) \
+                if isinstance(input_low, np.ndarray) else input_low
+        input_high = torch.from_numpy(input_high) \
+            if isinstance(input_high, np.ndarray) else input_high
+
         if input_high is None:
             # Forward DecompNet
-            input_low  = torch.FloatTensor(torch.from_numpy(input_low)).to(self.device)
+            input_low  = torch.FloatTensor(input_low).to(self.device)
             R_low , I_low  = self.DecomNet(input_low)
 
             # Forward RelightNet
@@ -170,8 +248,8 @@ class RetinexNet(nn.Module):
             I_delta_3 = torch.cat((I_delta, I_delta, I_delta), dim=1)
         else:
             # Forward DecompNet
-            input_low  = Variable(torch.FloatTensor(torch.from_numpy(input_low))).to(self.device)
-            input_high = Variable(torch.FloatTensor(torch.from_numpy(input_high))).to(self.device)
+            input_low  = Variable(torch.FloatTensor(input_low)).to(self.device)
+            input_high = Variable(torch.FloatTensor(input_high)).to(self.device)
             R_low , I_low  = self.DecomNet(input_low)
             R_high, I_high = self.DecomNet(input_high)
 
@@ -233,9 +311,7 @@ class RetinexNet(nn.Module):
                           self.gradient(input_I, "y") * torch.exp(-10 * self.ave_gradient(input_R, "y")))
 
     def train(self,
-              train_low_data_fnames,
-              train_high_data_fnames,
-              eval_low_data_fnames,
+              data_root,
               batch_size, patch_size,
               n_epochs,
               lr=0.001, beta1=0.9, beta2=0.999,
@@ -243,8 +319,18 @@ class RetinexNet(nn.Module):
               eval_interval=10, save_interval=10,
               train_phase=None):
 
-        assert len(train_low_data_fnames) == len(train_high_data_fnames)
-        num_batches = len(train_low_data_fnames) // int(batch_size)
+        dataset = PairDataset(
+            root=data_root,
+            transform=[ transforms.RandomCrop(patch_size),
+                        transforms.ToTensor(),
+                        # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                      ])
+        data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+        eval_low_data_fnames = glob(osp.join(data_root, 'eval', 'low', '*.*'))
+        eval_low_data_fnames.sort()
+
+        num_batches = len(dataset) // int(batch_size)
 
         # Create the optimizers
         self.train_op_Decom   = optim.Adam(self.DecomNet.parameters(),
@@ -253,7 +339,7 @@ class RetinexNet(nn.Module):
                                            lr=lr[0], betas=(beta1, beta2))
 
         # Initialize a network if its checkpoint is available
-        self.train_phase = train_phase
+        self.train_phase= train_phase
         load_model_status, global_step = self.load(ckpt_dir)
         if load_model_status:
             iter_num    = global_step
@@ -278,51 +364,15 @@ class RetinexNet(nn.Module):
                 param_group['lr'] = self.lr
             for param_group in self.train_op_Relight.param_groups:
                 param_group['lr'] = self.lr
-            for batch_id in range(start_step, num_batches):
-                # Generate training data for a batch
-                batch_input_low  = np.zeros((batch_size, 3, patch_size, patch_size,), dtype=np.float32)
-                batch_input_high = np.zeros((batch_size, 3, patch_size, patch_size,), dtype=np.float32)
-                for patch_id in range(batch_size):
-                    # Load images
-                    train_low_img  = Image.open(train_low_data_fnames[image_id])
-                    train_low_img  = np.array(train_low_img, dtype=np.float32) / 255.0
-                    train_high_img = Image.open(train_high_data_fnames[image_id])
-                    train_high_img = np.array(train_high_img, dtype=np.float32) / 255.0
-                    # Take random crops
-                    h, w, _ = train_low_img.shape
-                    x = random.randint(0, h - patch_size)
-                    y = random.randint(0, w - patch_size)
-                    train_low_img  = train_low_img[x: x + patch_size, y: y + patch_size, :]
-                    train_high_img = train_high_img[x: x + patch_size, y: y + patch_size, :]
-                    # Data augmentation
-                    if random.random() < 0.5:
-                        train_low_img  = np.flipud(train_low_img)
-                        train_high_img = np.flipud(train_high_img)
-                    if random.random() < 0.5:
-                        train_low_img  = np.fliplr(train_low_img)
-                        train_high_img = np.fliplr(train_high_img)
-                    rot_type = random.randint(1, 4)
-                    if random.random() < 0.5:
-                        train_low_img  = np.rot90(train_low_img, rot_type)
-                        train_high_img = np.rot90(train_high_img, rot_type)
-                    # Permute the images to tensor format
-                    train_low_img  = np.transpose(train_low_img, (2, 0, 1))
-                    train_high_img = np.transpose(train_high_img, (2, 0, 1))
-                    # Prepare the batch
-                    batch_input_low[patch_id, :, :, :]  = train_low_img
-                    batch_input_high[patch_id, :, :, :] = train_high_img
-                    self.input_low  = batch_input_low
-                    self.input_high = batch_input_high
-
-                    image_id = (image_id + 1) % len(train_low_data_fnames)
-                    if image_id == 0:
-                        tmp = list(zip(train_low_data_fnames, train_high_data_fnames))
-                        random.shuffle(list(tmp))
-                        train_low_data_fnames, train_high_data_fnames = zip(*tmp)
-
-
-                # Feed-Forward to the network and obtain loss
+            
+            # Generate training data for a batch
+            for batch_id, batch in enumerate(data_loader):
+                self.input_low, self.input_high = batch['A'], batch['B']
+                
+                # Feed-Forward to the network
                 self.forward(self.input_low,  self.input_high)
+
+                # Backward to obtain losses
                 if self.train_phase == "Decom":
                     self.train_op_Decom.zero_grad()
                     self.loss_Decom.backward()
@@ -492,9 +542,7 @@ def train(args, model):
     print('Number of training data: %d' % len(train_low_data_fnames))
 
     # Training DecomNet model!
-    model.train(train_low_data_fnames,
-                train_high_data_fnames,
-                eval_low_data_fnames,
+    model.train(args.data_dir,
                 batch_size=args.batch_size,
                 patch_size=args.patch_size,
                 n_epochs=args.n_epochs,
@@ -505,9 +553,7 @@ def train(args, model):
                 save_interval=args.save_interval,
                 train_phase="Decom")
     # Training RelightNet model!
-    model.train(train_low_data_fnames,
-                train_high_data_fnames,
-                eval_low_data_fnames,
+    model.train(args.data_dir,
                 batch_size=args.batch_size,
                 patch_size=args.patch_size,
                 n_epochs=args.n_epochs*2,
@@ -520,7 +566,7 @@ def train(args, model):
 
 
 def evaluate(args, model):
-    eval_low_data_fnames  = glob(osp.join(args.data_dir, 'eval', 'low', '*.*'))
+    eval_low_data_fnames = glob(osp.join(args.data_dir, 'eval', 'low', '*.*'))
     eval_low_data_fnames.sort()
     print('Number of evaluation images: %d' % len(eval_low_data_fnames))
 
@@ -530,14 +576,14 @@ def evaluate(args, model):
 
 
 def predict(args, model):
-    test_low_data_fnames  = glob(osp.join(args.data_dir, 'test', 'low', '*.*'))
+    test_low_data_fnames = glob(osp.join(args.data_dir, 'test', 'low', '*.*'))
     test_low_data_fnames.sort()
     print('Number of evaluation images: %d' % len(test_low_data_fnames))
 
     model.test(test_low_data_fnames,
                outputs_dir=args.outputs_dir,
                ckpts_dir=args.ckpts_dir)
-    
+
     # test_low_img = Image.open("../Madison.png")
     # input_S, output_S, _ = model.predict(test_low_img)
     # test_high_img = Image.fromarray(np.concatenate([input_S, output_S], axis=1))

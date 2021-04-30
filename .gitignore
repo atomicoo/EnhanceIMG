@@ -4,11 +4,12 @@
 **/data/
 **/images/
 **/results/
-000-*
-*.png
-*.bmp
-*.jpg
+**/*.png
+**/*.bmp
+**/*.jpg
 !Madison.png
+**/*.pth
+000-*
 
 # Git
 .git/

@@ -16,6 +16,7 @@
      |--- selfgan.py
      |--- ...
 |--- colorspace/  # 色彩空间转换
+|--- edges/       # 边缘检测算子
 |--- filters/     # 各种滤波器
 |--- histeq/      # 直方图均衡算法
 |--- noises/      # 噪声
@@ -55,11 +56,25 @@
 
 ![filters3](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/04/1619614271-filters3.png)
 
+### 边缘检测
+
+**检测算子**（灰度图|Laplacian|Sobel|Scharr）
+
+![opt-edge-detection](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/04/1619770625-opt-edge-detection.png)
+
+**HED 算法**（原图|HED|HED-Pro）
+
+TODO: 待补图
+
 ### 传统增强算法
 
 **直方图均衡**（原图|HE|AHE|CLAHE）
 
 ![hist-equal](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/04/1619614292-hist-equal.png)
+
+**Gamma 校正**（原图|Gamma|Gamma+MSS）
+
+![adjust-gamma](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/04/1619684267-adjust-gamma.png)
 
 **Retinex**（原图|MSRCR|AMSRCR|MSRCP）
 
@@ -81,3 +96,16 @@
 
 ![summer2winter](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/04/1619614350-summer2winter.png)
 
+**CycleGAN**（低光 <=> 正常）
+
+TODO: 待补图
+
+## TODO
+
+- [ ] SelfGAN 用于低照度图像增强
+
+## 欢迎交流
+
+- 微信号：Joee1995
+
+- 企鹅号：793071559
