@@ -1,3 +1,5 @@
+"""Ref: https://github.com/sniklaus/pytorch-hed"""
+
 import os
 import os.path as osp
 import numpy as np
@@ -124,12 +126,12 @@ class HEDNet(nn.Module):
 		s4 = nn.functional.interpolate(input=s4, size=(img.shape[2], img.shape[3]), mode='bilinear', align_corners=False)
 		s5 = nn.functional.interpolate(input=s5, size=(img.shape[2], img.shape[3]), mode='bilinear', align_corners=False)
 
-		return self.net_combine(torch.cat([ s1, s2, s3, s4, s5 ], 1))
+		return self.net_combine(torch.cat([ s1, s2, s3, s4, s5 ], 1)), ( s1, s2, s3, s4, s5 )
 
 	def predict(self, input_img_test):
-		input_img_test = Processor.forward(input_img_test)
-		input_img_test = torch.FloatTensor(input_img_test).to(self.device)
-		output_img_test = self.forward(input_img_test)
+		input_img_test  = Processor.forward(input_img_test)
+		input_img_test  = torch.FloatTensor(input_img_test).to(self.device)
+		output_img_test, *_ = self.forward(input_img_test)
 		output_img_test = output_img_test.detach().cpu().numpy()
 		output_img_test = Processor.inverse(output_img_test)
 		return output_img_test
@@ -141,5 +143,7 @@ if __name__ == '__main__':
 	model = HEDNet(device=torch.device('cuda:0')).eval()
 
 	input_img_test = Image.open("../Madison.png")
+	gray_img_test = np.uint8(input_img_test.convert('L'))
 	output_img_test = model.predict(input_img_test)
-	Image.fromarray(output_img_test[:, :, 0]).save("demo.png")
+	output_img_test = np.concatenate([gray_img_test, output_img_test.squeeze(2)], axis=1)
+	Image.fromarray(output_img_test).save("demo.png")

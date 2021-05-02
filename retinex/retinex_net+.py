@@ -97,14 +97,14 @@ class PairDataset(Dataset):
             # TODO: Realize this with pytorch
             if random.random() < 0.5:
                 item_A = np.flipud(item_A)
-                item_B= np.flipud(item_B)
+                item_B = np.flipud(item_B)
             if random.random() < 0.5:
                 item_A = np.fliplr(item_A)
-                item_B= np.fliplr(item_B)
+                item_B = np.fliplr(item_B)
             rot_type = random.randint(1, 4)
             if random.random() < 0.5:
                 item_A = np.rot90(item_A, rot_type)
-                item_B= np.rot90(item_B, rot_type)
+                item_B = np.rot90(item_B, rot_type)
 
             item_A = torch.from_numpy(np.ascontiguousarray(item_A))
             item_B = torch.from_numpy(np.ascontiguousarray(item_B))

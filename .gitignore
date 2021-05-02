@@ -1,5 +1,6 @@
 # Projects
 .vscode/
+references/
 **/ckpts/
 **/data/
 **/images/
@@ -9,6 +10,7 @@
 **/*.jpg
 !Madison.png
 **/*.pth
+**/*.gz
 000-*
 
 # Git

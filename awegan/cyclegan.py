@@ -4,7 +4,7 @@ import argparse
 import os
 import os.path as osp
 import time
-import glob
+from glob import glob
 import random
 import itertools
 
@@ -14,10 +14,11 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
+from torchvision.utils import save_image
 from PIL import Image
 
 manualSeed = 2021
-#manualSeed = random.randint(1, 10000) # use if you want new results
+# manualSeed = random.randint(1, 10000) # use if you want new results
 print("Random Seed: ", manualSeed)
 random.seed(manualSeed)
 torch.manual_seed(manualSeed)
@@ -128,8 +129,8 @@ class ImageDataset(Dataset):
         self.transform = transforms.Compose(transform)
         self.unaligned = unaligned
 
-        self.files_A = sorted(glob.glob(os.path.join(root, '%sA' % mode) + '/*.*'))
-        self.files_B = sorted(glob.glob(os.path.join(root, '%sB' % mode) + '/*.*'))
+        self.files_A = sorted(glob(os.path.join(root, '%sA' % mode) + '/*.*'))
+        self.files_B = sorted(glob(os.path.join(root, '%sB' % mode) + '/*.*'))
 
     def __getitem__(self, index):
         item_A = self.transform(Image.open(self.files_A[index % len(self.files_A)]))
@@ -178,23 +179,7 @@ class LambdaLR():
         return 1.0 - max(0, epoch + self.offset - self.decay_start_epoch)/(self.n_epochs - self.decay_start_epoch)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--epoch', type=int, default=0, help='starting epoch')
-    parser.add_argument('--n_epochs', type=int, default=200, help='number of epochs of training')
-    parser.add_argument('--batch_size', type=int, default=1, help='size of the batches')
-    parser.add_argument('--data_root', type=str, default='datasets/horse2zebra/', help='root directory of the dataset')
-    parser.add_argument('--lr', type=float, default=0.0002, help='initial learning rate')
-    parser.add_argument('--decay_epoch', type=int, default=100, help='epoch to start linearly decaying the learning rate to 0')
-    parser.add_argument('--img_size', type=int, default=256, help='size of the data crop (squared assumed)')
-    parser.add_argument('--input_nc', type=int, default=3, help='number of channels of input data')
-    parser.add_argument('--output_nc', type=int, default=3, help='number of channels of output data')
-    parser.add_argument('--n_cpu', type=int, default=8, help='number of cpu threads to use during batch generation')
-    parser.add_argument("--n_gpu", type=int, default=1, help="number of gpu to use during training model")
-    parser.add_argument("--ckpts_dir", type=str, default="ckpts", help="saved model file directory")
-    parser.add_argument("--save_interval", type=int, default=10, help="interval between model saving")
-    opt = parser.parse_args()
-    print(opt)
+def train(opt):
 
     os.makedirs(opt.ckpts_dir, exist_ok=True)
 
@@ -343,6 +328,10 @@ if __name__ == '__main__':
         lr_scheduler_D_A.step()
         lr_scheduler_D_B.step()
 
+        if epoch % opt.sample_interval == 0:
+            save_image(fake_A.data[:16], "images/Epoch%d-fakeA.png" % epoch, nrow=4, normalize=True)
+            save_image(fake_B.data[:16], "images/Epoch%d-fakeB.png" % epoch, nrow=4, normalize=True)
+
         # Save models checkpoints
         if epoch % opt.save_interval == 0:
             torch.save({
@@ -351,3 +340,74 @@ if __name__ == '__main__':
                 "netD_A": netD_A.state_dict(),
                 "netD_B": netD_B.state_dict()
             }, osp.join(opt.ckpts_dir, f'{time.strftime("%Y-%m-%d")}_chkpt_epoch{epoch:03d}.pth'))
+
+
+def get_last_chkpt_path(logdir):
+    """Returns the last checkpoint file name in the given log dir path."""
+    checkpoints = glob(osp.join(logdir, '*.pth'))
+    checkpoints.sort()
+    if len(checkpoints) == 0:
+        return None
+    return checkpoints[-1]
+
+
+def test(opt):
+    os.makedirs(opt.ckpts_dir, exist_ok=True)
+    os.makedirs(opt.outputs_dir, exist_ok=True)
+
+    device = torch.device("cuda:0" if (torch.cuda.is_available() and opt.n_gpu > 0) else "cpu")
+
+    checkpoint = get_last_chkpt_path(opt.ckpts_dir)
+    checkpoint = torch.load(checkpoint, map_location=device)
+
+    netG_A2B = Generator(opt.input_nc, opt.output_nc).to(device)
+    netG_B2A = Generator(opt.output_nc, opt.input_nc).to(device)
+
+    netG_A2B.load_state_dict(checkpoint['netG_A2B'])
+    netG_B2A.load_state_dict(checkpoint['netG_B2A'])
+
+    transform = [ transforms.Resize(int(opt.img_size*1.16), Image.BICUBIC), 
+                  transforms.CenterCrop(opt.img_size), 
+                  transforms.Resize(int(opt.img_size), Image.BICUBIC), 
+                  transforms.ToTensor(),
+                  transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5)) ]
+    dataloader = DataLoader(ImageDataset(opt.data_root, transform=transform, unaligned=True, mode='test'), 
+                            batch_size=opt.batch_size, shuffle=True, num_workers=opt.n_cpu)
+
+    for idx, batch in enumerate(dataloader):
+        # Set model input
+        input_testA, input_testB = batch['A'].to(device), batch['B'].to(device)
+
+        output_testA = netG_A2B(input_testA)
+        output_testB = netG_B2A(input_testB)
+
+        ipath = osp.join(opt.outputs_dir, f'{time.strftime("%Y-%m-%d")}_A_batch{idx:03d}.png')
+        testA = torch.cat((input_testA.data[:4], output_testA.data[:4]), 0)
+        save_image(testA, ipath, nrow=4, padding=2, normalize=True)
+        ipath = osp.join(opt.outputs_dir, f'{time.strftime("%Y-%m-%d")}_B_batch{idx:03d}.png')
+        testB = torch.cat((input_testB.data[:4], output_testB.data[:4]), 0)
+        save_image(testB, ipath, nrow=4, padding=2, normalize=True)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--epoch', type=int, default=1, help='starting epoch')
+    parser.add_argument('--n_epochs', type=int, default=200, help='number of epochs of training')
+    parser.add_argument('--batch_size', type=int, default=16, help='size of the batches')
+    parser.add_argument('--data_root', type=str, default='datasets/horse2zebra/', help='root directory of the dataset')
+    parser.add_argument('--lr', type=float, default=0.0002, help='initial learning rate')
+    parser.add_argument('--decay_epoch', type=int, default=100, help='epoch to start linearly decaying the learning rate to 0')
+    parser.add_argument('--img_size', type=int, default=256, help='size of the data crop (squared assumed)')
+    parser.add_argument('--input_nc', type=int, default=3, help='number of channels of input data')
+    parser.add_argument('--output_nc', type=int, default=3, help='number of channels of output data')
+    parser.add_argument('--n_cpu', type=int, default=8, help='number of cpu threads to use during batch generation')
+    parser.add_argument("--n_gpu", type=int, default=1, help="number of gpu to use during training model")
+    parser.add_argument("--ckpts_dir", type=str, default="ckpts", help="saved model file directory")
+    parser.add_argument("--outputs_dir", type=str, default="results", help="output wave file directory")
+    parser.add_argument("--sample_interval", type=int, default=10, help="interval between image sampling")
+    parser.add_argument("--save_interval", type=int, default=10, help="interval between model saving")
+    opt = parser.parse_args()
+    print(opt)
+
+    # train(opt)
+    test(opt)

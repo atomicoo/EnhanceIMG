@@ -60,11 +60,13 @@
 
 **检测算子**（灰度图|Laplacian|Sobel|Scharr）
 
-![opt-edge-detection](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/04/1619770625-opt-edge-detection.png)
+![opt-edge-detection-2](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1619852372-opt-edge-detection-2.png)
 
-**HED 算法**（原图|HED|HED-Pro）
+**其他算法**（灰度图|结构森林|HED|HED-feats-5）
 
-TODO: 待补图
+![hn-edge-detection](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1619852478-hn-edge-detection.png)
+
+![hed-fs1-fs5](D:\Code\bishe\EnhanceIMG\asserts\hed-fs1-fs5.png)
 
 ### 传统增强算法
 
@@ -92,17 +94,28 @@ TODO: 待补图
 
 ### 生成对抗网络
 
-**CycleGAN**（夏天 <=> 冬天）
+**Pix2Pix**
 
-![summer2winter](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/04/1619614350-summer2winter.png)
+（边缘 <=> 图像）TODO：待补图
 
-**CycleGAN**（低光 <=> 正常）
+（低光 <=> 正常）
 
-TODO: 待补图
+![pix2pix](D:\Code\bishe\EnhanceIMG\asserts\pix2pix.png)
+
+**CycleGAN**
+
+（夏天 <=> 冬天）
+
+![summer2winter](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1619937669-summer2winter.png)
+
+（低光 <=> 正常）TODO：待补图
 
 ## TODO
 
-- [ ] SelfGAN 用于低照度图像增强
+- [x] RetinexNet 低光增强模型
+- [x] Pix2Pix 模型用于图像增强
+- [ ] CycleGan 模型用于图像增强
+- [ ] SelfGAN 图像增强模型（Ours）
 
 ## 欢迎交流
 
