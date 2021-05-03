@@ -15,7 +15,6 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-from torchvision.transforms.transforms import Resize
 from torchvision.utils import save_image
 from PIL import Image
 
@@ -245,7 +244,7 @@ def train(opt):
 
     # Data loader
     transform = transforms.Compose([
-        transforms.Resize(size=opt.resize_scale),
+        transforms.Resize(opt.resize_scale, Image.BICUBIC),
         transforms.ToTensor(),
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
     ])
@@ -333,7 +332,7 @@ def train(opt):
 
         if epoch % opt.sample_interval == 0:
             ipath = osp.join(opt.outputs_dir, f'{time.strftime("%Y-%m-%d")}_{epoch:03d}.png')
-            save_image(g_result.data[:1], ipath, nrow=1, normalize=True)
+            save_image(g_result.data[:16], ipath, nrow=4, normalize=True)
         
         if epoch % opt.save_interval == 0:
             torch.save({
@@ -362,12 +361,12 @@ def test(opt):
 
     # Model definition
     generator = Generator(opt.hidden_dim).to(device)
-    generator.load_state_dict(checkpoint['model_g'])
+    generator.load_state_dict({k.replace("module.", ""): v for k,v in checkpoint['model_g'].items()})
 
     # Data loader
     transform = transforms.Compose([
-        # transforms.Resize(size=opt.resize_scale),
-        # transforms.Resize(size=(2*384, 2*512*2)),
+        # transforms.Resize(opt.resize_scale, Image.BICUBIC),
+        # transforms.Resize((2*384, 2*512*2), Image.BICUBIC),
         # transforms.CenterCrop(opt.img_size),
         transforms.ToTensor(),
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
@@ -382,7 +381,7 @@ def test(opt):
             y_, x_ = batch.chunk(2, axis=-1)
         else:
             x_, y_ = batch.chunk(2, axis=-1)
-        # x_, y_ = random_crop(x_, y_, opt.img_size)
+        x_, y_ = random_crop(x_, y_, opt.img_size)
 
         g_result = generator(x_)
 
@@ -419,5 +418,5 @@ if __name__ == '__main__':
     opt = parser.parse_args()
     print(opt)
 
-    train(opt)
-    # test(opt)
+    # train(opt)
+    test(opt)

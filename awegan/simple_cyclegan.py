@@ -10,6 +10,7 @@ import itertools
 
 import torch
 import torch.nn as nn
+import torch.optim as optim
 import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
@@ -182,6 +183,7 @@ class LambdaLR():
 def train(opt):
 
     os.makedirs(opt.ckpts_dir, exist_ok=True)
+    os.makedirs(opt.outputs_dir, exist_ok=True)
 
     device = torch.device("cuda:0" if (torch.cuda.is_available() and opt.n_gpu > 0) else "cpu")
 
@@ -204,19 +206,19 @@ def train(opt):
     netD_B.apply(weights_init_normal)
 
     # Lossess
-    criterion_GAN = torch.nn.MSELoss().to(device)
-    criterion_cycle = torch.nn.L1Loss().to(device)
-    criterion_identity = torch.nn.L1Loss().to(device)
+    criterion_GAN = nn.MSELoss().to(device)
+    criterion_cycle = nn.L1Loss().to(device)
+    criterion_identity = nn.L1Loss().to(device)
 
     # Optimizers & LR schedulers
-    optimizer_G = torch.optim.Adam(itertools.chain(netG_A2B.parameters(), netG_B2A.parameters()),
+    optimizer_G = optim.Adam(itertools.chain(netG_A2B.parameters(), netG_B2A.parameters()),
                                     lr=opt.lr, betas=(0.5, 0.999))
-    optimizer_D_A = torch.optim.Adam(netD_A.parameters(), lr=opt.lr, betas=(0.5, 0.999))
-    optimizer_D_B = torch.optim.Adam(netD_B.parameters(), lr=opt.lr, betas=(0.5, 0.999))
+    optimizer_D_A = optim.Adam(netD_A.parameters(), lr=opt.lr, betas=(0.5, 0.999))
+    optimizer_D_B = optim.Adam(netD_B.parameters(), lr=opt.lr, betas=(0.5, 0.999))
 
-    lr_scheduler_G = torch.optim.lr_scheduler.LambdaLR(optimizer_G, lr_lambda=LambdaLR(opt.n_epochs, opt.epoch, opt.decay_epoch).step)
-    lr_scheduler_D_A = torch.optim.lr_scheduler.LambdaLR(optimizer_D_A, lr_lambda=LambdaLR(opt.n_epochs, opt.epoch, opt.decay_epoch).step)
-    lr_scheduler_D_B = torch.optim.lr_scheduler.LambdaLR(optimizer_D_B, lr_lambda=LambdaLR(opt.n_epochs, opt.epoch, opt.decay_epoch).step)
+    lr_scheduler_G = optim.lr_scheduler.LambdaLR(optimizer_G, lr_lambda=LambdaLR(opt.n_epochs, opt.epoch, opt.decay_epoch).step)
+    lr_scheduler_D_A = optim.lr_scheduler.LambdaLR(optimizer_D_A, lr_lambda=LambdaLR(opt.n_epochs, opt.epoch, opt.decay_epoch).step)
+    lr_scheduler_D_B = optim.lr_scheduler.LambdaLR(optimizer_D_B, lr_lambda=LambdaLR(opt.n_epochs, opt.epoch, opt.decay_epoch).step)
 
     # Inputs & targets memory allocation
     Tensor = torch.cuda.FloatTensor if (device.type == 'cuda') else torch.Tensor
@@ -229,8 +231,9 @@ def train(opt):
     fake_B_buffer = ReplayBuffer()
 
     # Dataset loader
-    transform = [ transforms.Resize(int(opt.img_size*1.12), Image.BICUBIC), 
-                  transforms.RandomCrop(opt.img_size), 
+    transform = [ # transforms.Resize(int(opt.resize_scale), Image.BICUBIC),
+                  # transforms.Resize(int(opt.img_size*1.12), Image.BICUBIC),
+                  transforms.RandomCrop(opt.img_size),
                   transforms.RandomHorizontalFlip(),
                   transforms.ToTensor(),
                   transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5)) ]
@@ -329,8 +332,8 @@ def train(opt):
         lr_scheduler_D_B.step()
 
         if epoch % opt.sample_interval == 0:
-            save_image(fake_A.data[:16], "images/Epoch%d-fakeA.png" % epoch, nrow=4, normalize=True)
-            save_image(fake_B.data[:16], "images/Epoch%d-fakeB.png" % epoch, nrow=4, normalize=True)
+            save_image(fake_A.data[:16], osp.join(opt.outputs_dir, "Epoch%d-fakeA.png" % epoch), nrow=4, normalize=True)
+            save_image(fake_B.data[:16], osp.join(opt.outputs_dir, "Epoch%d-fakeB.png" % epoch), nrow=4, normalize=True)
 
         # Save models checkpoints
         if epoch % opt.save_interval == 0:
@@ -363,12 +366,11 @@ def test(opt):
     netG_A2B = Generator(opt.input_nc, opt.output_nc).to(device)
     netG_B2A = Generator(opt.output_nc, opt.input_nc).to(device)
 
-    netG_A2B.load_state_dict(checkpoint['netG_A2B'])
-    netG_B2A.load_state_dict(checkpoint['netG_B2A'])
+    netG_A2B.load_state_dict({k.replace("module.", ""): v for k,v in checkpoint['netG_A2B'].items()})
+    netG_B2A.load_state_dict({k.replace("module.", ""): v for k,v in checkpoint['netG_B2A'].items()})
 
-    transform = [ transforms.Resize(int(opt.img_size*1.16), Image.BICUBIC), 
-                  transforms.CenterCrop(opt.img_size), 
-                  transforms.Resize(int(opt.img_size), Image.BICUBIC), 
+    transform = [ # transforms.Resize(int(opt.img_size), Image.BICUBIC),
+                  # transforms.RandomCrop(opt.img_size, Image.BICUBIC),
                   transforms.ToTensor(),
                   transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5)) ]
     dataloader = DataLoader(ImageDataset(opt.data_root, transform=transform, unaligned=True, mode='test'), 
@@ -383,7 +385,7 @@ def test(opt):
 
         ipath = osp.join(opt.outputs_dir, f'{time.strftime("%Y-%m-%d")}_A_batch{idx:03d}.png')
         testA = torch.cat((input_testA.data[:4], output_testA.data[:4]), 0)
-        save_image(testA, ipath, nrow=4, padding=2, normalize=True)
+        save_image(testA, ipath, nrow=4, padding=0, normalize=True)
         ipath = osp.join(opt.outputs_dir, f'{time.strftime("%Y-%m-%d")}_B_batch{idx:03d}.png')
         testB = torch.cat((input_testB.data[:4], output_testB.data[:4]), 0)
         save_image(testB, ipath, nrow=4, padding=2, normalize=True)
@@ -394,10 +396,11 @@ if __name__ == '__main__':
     parser.add_argument('--epoch', type=int, default=1, help='starting epoch')
     parser.add_argument('--n_epochs', type=int, default=200, help='number of epochs of training')
     parser.add_argument('--batch_size', type=int, default=16, help='size of the batches')
-    parser.add_argument('--data_root', type=str, default='datasets/horse2zebra/', help='root directory of the dataset')
+    parser.add_argument('--data_root', type=str, default='data/horse2zebra/', help='root directory of the dataset')
     parser.add_argument('--lr', type=float, default=0.0002, help='initial learning rate')
     parser.add_argument('--decay_epoch', type=int, default=100, help='epoch to start linearly decaying the learning rate to 0')
     parser.add_argument('--img_size', type=int, default=256, help='size of the data crop (squared assumed)')
+    parser.add_argument('--resize_scale', type=int, default=286, help='resize scale')
     parser.add_argument('--input_nc', type=int, default=3, help='number of channels of input data')
     parser.add_argument('--output_nc', type=int, default=3, help='number of channels of output data')
     parser.add_argument('--n_cpu', type=int, default=8, help='number of cpu threads to use during batch generation')

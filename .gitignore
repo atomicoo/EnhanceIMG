@@ -8,6 +8,7 @@ references/
 **/*.png
 **/*.bmp
 **/*.jpg
+!asserts/*.png
 !Madison.png
 **/*.pth
 **/*.gz

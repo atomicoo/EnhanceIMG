@@ -2,7 +2,7 @@
 
 [TOC]
 
-此代码库用于图像增强算法的探索。
+此代码库用于图像增强算法的探索，主要包括：低光增强、图像修复、超分辨率重建 …… 
 
 ## 目录结构
 
@@ -11,12 +11,14 @@
 |--- asserts/
 |--- awegan/      # GAN相关算法
      |--- __init__.py
+     |--- networks.py
      |--- cyclegan.py
      |--- dcgan.py
+     |--- pix2pix.py
      |--- selfgan.py
      |--- ...
 |--- colorspace/  # 色彩空间转换
-|--- edges/       # 边缘检测算子
+|--- edges/       # 边缘检测算法
 |--- filters/     # 各种滤波器
 |--- histeq/      # 直方图均衡算法
 |--- noises/      # 噪声
@@ -66,7 +68,7 @@
 
 ![hn-edge-detection](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1619852478-hn-edge-detection.png)
 
-![hed-fs1-fs5](D:\Code\bishe\EnhanceIMG\asserts\hed-fs1-fs5.png)
+![hed-fs1-fs5](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1619955819-hed-fs1-fs5.png)
 
 ### 传统增强算法
 
@@ -96,11 +98,15 @@
 
 **Pix2Pix**
 
-（边缘 <=> 图像）TODO：待补图
+（边缘 <=> 图像）
+
+![pix2pix-facades](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620004141-pix2pix-facades.png)
 
 （低光 <=> 正常）
 
-![pix2pix](D:\Code\bishe\EnhanceIMG\asserts\pix2pix.png)
+![pix2pix](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1619955841-pix2pix.png)
+
+![pix2pix4](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620038713-pix2pix4.png)
 
 **CycleGAN**
 
@@ -108,14 +114,17 @@
 
 ![summer2winter](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1619937669-summer2winter.png)
 
-（低光 <=> 正常）TODO：待补图
+（低光 <=> 正常）
+
+![cyclegan4](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620037334-cyclegan4.png)
 
 ## TODO
 
 - [x] RetinexNet 低光增强模型
 - [x] Pix2Pix 模型用于图像增强
-- [ ] CycleGan 模型用于图像增强
-- [ ] SelfGAN 图像增强模型（Ours）
+- [ ] Pix2Pix 模型用于图像修复
+- [x] CycleGan 模型用于图像增强
+- [ ] SelfGAN 图像增强模型（Mine）
 
 ## 欢迎交流
 
