@@ -2,6 +2,7 @@
 .vscode/
 references/
 **/ckpts/
+**/checkpoints/
 **/data/
 **/images/
 **/results/

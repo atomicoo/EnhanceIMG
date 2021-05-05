@@ -1,8 +1,13 @@
+import os
+import os.path as osp
 import functools
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.autograd import Variable
+
+from .vgg import vgg16
 
 
 ###############################################################################
@@ -279,6 +284,54 @@ class GANLoss(nn.Module):
         return loss
 
 
+def vgg_preprocess(batch, opt):
+    tensortype = type(batch.data)
+    (r, g, b) = torch.chunk(batch, 3, dim = 1)
+    batch = torch.cat((b, g, r), dim = 1)  # convert RGB to BGR
+    batch = (batch + 1) * 255 * 0.5  # [-1, 1] -> [0, 255]
+    if opt.vgg_mean:
+        mean = tensortype(batch.data.size())
+        mean[:, 0, :, :] = 103.939
+        mean[:, 1, :, :] = 116.779
+        mean[:, 2, :, :] = 123.680
+        batch = batch.sub(Variable(mean))  # subtract mean
+    return batch
+
+
+class PerceptualLoss(nn.Module):
+    def __init__(self, opt):
+        super(PerceptualLoss, self).__init__()
+        self.opt = opt
+        self.instancenorm = nn.InstanceNorm2d(512, affine=False)
+
+    def compute_vgg_loss(self, vgg, source, target):
+        source_vgg = vgg_preprocess(source, self.opt)
+        target_vgg = vgg_preprocess(target, self.opt)
+
+        source_fts = vgg(source_vgg, self.opt)
+        target_fts = vgg(target_vgg, self.opt)
+        if not self.opt.no_vgg_instance:
+            source_fts = self.instancenorm(source_fts)
+            target_fts = self.instancenorm(target_fts)
+
+        return torch.mean((source_fts - target_fts) ** 2)
+
+
+def load_vgg16(model_dir, gpu_ids):
+    """ Use the model from https://github.com/abhiskk/fast-neural-style/blob/master/neural_style/utils.py """
+    if not osp.exists(model_dir):
+        os.makedirs(model_dir)
+
+    vgg = vgg16(pretrained=True)
+    # vgg.load_state_dict(torch.load(osp.join(model_dir, 'vgg16.weight')))
+
+    if len(gpu_ids) and torch.cuda.is_available():
+        vgg.to(gpu_ids[0])
+        vgg = nn.DataParallel(vgg, gpu_ids)  # multi-GPUs
+
+    return vgg
+
+
 ##############################################################################
 # Network Classes
 ##############################################################################
@@ -322,7 +375,7 @@ class ResnetGenerator(nn.Module):
             n_blocks (int)      -- the number of ResNet blocks
             padding_type (str)  -- the name of padding layer in conv layers: reflect | replicate | zero
         """
-        assert (n_blocks >= 0), "the num of resnet block `n_blocks` should not be negative"
+        assert(n_blocks >= 0), "the num of resnet block `n_blocks` should not be negative"
         super(ResnetGenerator, self).__init__()
         if type(norm_layer) == functools.partial:
             use_bias = norm_layer.func == nn.InstanceNorm2d

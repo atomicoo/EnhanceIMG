@@ -1,6 +1,8 @@
 numpy==1.19.2
 torch==1.5.0
 torchvision==0.6.0
+dominate==2.6.0
+visdom>=0.1.8.9
 scipy==1.4.1
 scikit-image==0.17.2
 tqdm==4.50.2
