@@ -1,2 +1,2 @@
-from .train_options import TrainOptions
-from .test_options import TestOptions
+from options.train_options import TrainOptions
+from options.test_options import TestOptions

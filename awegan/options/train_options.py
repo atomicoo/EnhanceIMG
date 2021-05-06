@@ -1,14 +1,14 @@
-from .base_options import BaseOptions
+from .base_options import BasicOptions
 
 
-class TrainOptions(BaseOptions):
+class TrainOptions(BasicOptions):
     """This class includes training options.
 
     It also includes shared options defined in BaseOptions.
     """
 
     def initialize(self, parser):
-        parser = BaseOptions.initialize(self, parser)
+        parser = BasicOptions.initialize(self, parser)
         # visdom and HTML visualization parameters
         parser.add_argument('--display_freq', type=int, default=400, help='frequency of showing training results on screen')
         parser.add_argument('--display_ncols', type=int, default=4, help='if positive, display all images in a single visdom web panel with certain number of images per row.')

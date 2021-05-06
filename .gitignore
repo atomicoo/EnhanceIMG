@@ -12,6 +12,7 @@ references/
 !asserts/*.png
 !Madison.png
 **/*.pth
+**/*.caffemodel
 **/*.gz
 000-*
 

@@ -1,7 +1,7 @@
 import time
 import numpy as np
 
-try: 
+try:
     from .options import TrainOptions
     from .datasets import create_dataset
     from .models import create_model
@@ -15,9 +15,6 @@ except Exception:
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()
-    opt.display_freq = 1
-    opt.print_freq = 1
-    opt.update_html_freq = 1
     dataset = create_dataset(opt)
     dataset_size = len(dataset)    # get the number of images in the dataset
     print('the number of training images = %d' % dataset_size)
@@ -62,7 +59,6 @@ if __name__ == '__main__':
                 model.save_networks(save_suffix)
 
             iter_data_time = time.time()
-            break
 
         if epoch % opt.save_epoch_freq == 0:
             print('saving the model at the end of epoch %d, iters %d' % (epoch, total_iters))

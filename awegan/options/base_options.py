@@ -1,11 +1,32 @@
 import argparse
 import os, sys
+from abc import ABC, abstractmethod
+
 import torch
 import models
 import datasets
 
 
-class BaseOptions():
+class BaseOptions(ABC):
+    """This class is an abstract base class (ABC) for options.
+    To create a subclass, you need to implement the following five functions:
+        -- <__init__>:                      initialize the class; first call BaseOptions.__init__(self, opt).
+        -- <initialize>:                    initialize the option's arguments.
+        -- <parse>:                         parse the option's arguments.
+    """
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def initialize(self, parser):
+        pass
+
+    @abstractmethod
+    def parse(self):
+        pass
+
+
+class BasicOptions(BaseOptions):
     """This class defines options used during both training and test time.
 
     It also implements several helper functions such as parsing, printing, and saving the options.
