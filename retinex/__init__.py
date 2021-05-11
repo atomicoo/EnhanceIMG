@@ -1,3 +1,5 @@
+"""Ref: https://github.com/dongb5/Retinex"""
+
 import numpy as np
 import cv2
 

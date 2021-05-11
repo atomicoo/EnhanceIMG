@@ -126,6 +126,9 @@ class ReCycGANModel(BaseModel):
             Parameters:
                 input (tensor): image, torch.Variable of torch.Tensor
                 beta (int): See https://arxiv.org/abs/1412.0035 (fig. 2) to see effect of `beta` 
+
+            References:
+                https://github.com/sedaboni/ADMM-DIPTV/blob/master/utils/sr_utils.py
             """
             dh = torch.pow(input[..., :, 1:] - input[..., :, :-1], 2)
             dw = torch.pow(input[..., 1:, :] - input[..., :-1, :], 2)

@@ -10,12 +10,12 @@
 .
 |--- asserts/
 |--- awegan/      # GAN相关算法
+     |--- datasets/
+     |--- models/
+     |--- options/
+     |--- util/
      |--- __init__.py
-     |--- networks.py
-     |--- cyclegan.py
-     |--- dcgan.py
-     |--- pix2pix.py
-     |--- selfgan.py
+     |--- train.py
      |--- ...
 |--- colorspace/  # 色彩空间转换
 |--- edges/       # 边缘检测算法
@@ -118,6 +118,21 @@
 
 ![cyclegan4](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620037334-cyclegan4.png)
 
+## 参考资料
+
+- [Multiscale Retinex](http://www.ipol.im/pub/art/2014/107/)
+- [An automated multi Scale Retinex with Color Restoration for image enhancement](http://ieeexplore.ieee.org/document/6176791/)
+- [A multiscale retinex for bridging the gap between color images and the human observation of scenes](http://ieeexplore.ieee.org/document/597272/)
+- [Deep Retinex Decomposition for Low-Light Enhancement](https://arxiv.org/abs/1808.04560)
+- [Image-to-Image Translation with Conditional Adversarial Networks](https://arxiv.org/abs/1611.07004)
+- [Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks](https://arxiv.org/abs/1703.10593)
+- [High-Resolution Image Synthesis and Semantic Manipulation with Conditional GANs](https://arxiv.org/abs/1711.11585)
+- [Toward Multimodal Image-to-Image Translation](https://arxiv.org/abs/1711.11586)
+- [Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks](https://arxiv.org/abs/1511.06434)
+- [Deep Residual Learning for Image Recognition](https://arxiv.org/abs/1512.03385)
+- [U-Net: Convolutional Networks for Biomedical Image Segmentation](https://arxiv.org/abs/1505.04597)
+- [Fully Convolutional Networks for Semantic Segmentation](https://arxiv.org/abs/1605.06211v1)
+
 ## TODO
 
 - [x] RetinexNet 低光增强模型
@@ -131,3 +146,4 @@
 - 微信号：Joee1995
 
 - 企鹅号：793071559
+
