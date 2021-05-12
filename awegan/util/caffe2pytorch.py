@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+"""Env: https://github.com/floydhub/dl-docker"""
 
+import sys
 import os.path as osp
 import pkg_resources
-import sys
 
 import torch
 
@@ -30,7 +30,7 @@ for name_lower, name_upper, blacklists in models:
         'torchfcn/ext/fcn.berkeleyvision.org/voc-%s/deploy.prototxt' %
         name_lower)
     caffe_model_path = osp.expanduser(
-        '~/data/models/caffe/%s-heavy-pascal.caffemodel' % name_lower)
+        '~/sharedfolder/models/caffe/%s-heavy-pascal.caffemodel' % name_lower)
     caffe_model = caffe.Net(caffe_prototxt, caffe_model_path, caffe.TEST)
 
     torch_model = getattr(torchfcn.models, name_upper)()
@@ -51,6 +51,6 @@ for name_lower, name_upper, blacklists in models:
             p2.data = torch.from_numpy(p1[1].data)
 
     torch_model_path = osp.expanduser(
-        '~/data/models/pytorch/%s-heavy-pascal.pth' % name_lower)
+        '~/sharedfolder/models/pytorch/%s_from_caffe.pth' % name_lower)
     torch.save(torch_model.state_dict(), torch_model_path)
     print('==> Saved pytorch model: %s' % torch_model_path)

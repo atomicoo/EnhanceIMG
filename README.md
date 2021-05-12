@@ -22,6 +22,7 @@
 |--- filters/     # 各种滤波器
 |--- histeq/      # 直方图均衡算法
 |--- noises/      # 噪声
+|--- priors/      # 自然图像先验信息
 |--- retinex/     # Retinex系列算法
      |--- __init__.py
      |--- enhancer.py
@@ -63,6 +64,10 @@
 **检测算子**（灰度图|Laplacian|Sobel|Scharr）
 
 ![opt-edge-detection-2](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1619852372-opt-edge-detection-2.png)
+
+**检测算子**（灰度图|LoG|DoG|Gabor）
+
+![opt-edge-detection-3](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620812279-opt-edge-detection-3.png)
 
 **其他算法**（灰度图|结构森林|HED|HED-feats-5）
 

@@ -5,6 +5,7 @@ import os.path as osp
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class Processor(nn.Module):
@@ -41,14 +42,14 @@ class HEDNet(nn.Module):
 
 		self.device = device
 
-		self.net_vgg_fs1 = nn.Sequential(
+		self.netVggOne = nn.Sequential(
 			nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1),
 			nn.ReLU(inplace=False),
 			nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1),
 			nn.ReLU(inplace=False)
 		)
 
-		self.net_vgg_fs2 = nn.Sequential(
+		self.netVggTwo = nn.Sequential(
 			nn.MaxPool2d(kernel_size=2, stride=2),
 			nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1),
 			nn.ReLU(inplace=False),
@@ -56,7 +57,7 @@ class HEDNet(nn.Module):
 			nn.ReLU(inplace=False)
 		)
 
-		self.net_vgg_fs3 = nn.Sequential(
+		self.netVggThr = nn.Sequential(
 			nn.MaxPool2d(kernel_size=2, stride=2),
 			nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1),
 			nn.ReLU(inplace=False),
@@ -66,7 +67,7 @@ class HEDNet(nn.Module):
 			nn.ReLU(inplace=False)
 		)
 
-		self.net_vgg_fs4 = nn.Sequential(
+		self.netVggFou = nn.Sequential(
 			nn.MaxPool2d(kernel_size=2, stride=2),
 			nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=1, padding=1),
 			nn.ReLU(inplace=False),
@@ -76,7 +77,7 @@ class HEDNet(nn.Module):
 			nn.ReLU(inplace=False)
 		)
 
-		self.net_vgg_fs5 = nn.Sequential(
+		self.netVggFiv = nn.Sequential(
 			nn.MaxPool2d(kernel_size=2, stride=2),
 			nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1),
 			nn.ReLU(inplace=False),
@@ -86,19 +87,22 @@ class HEDNet(nn.Module):
 			nn.ReLU(inplace=False)
 		)
 
-		self.net_score_1 = nn.Conv2d(in_channels=64, out_channels=1, kernel_size=1, stride=1, padding=0)
-		self.net_score_2 = nn.Conv2d(in_channels=128, out_channels=1, kernel_size=1, stride=1, padding=0)
-		self.net_score_3 = nn.Conv2d(in_channels=256, out_channels=1, kernel_size=1, stride=1, padding=0)
-		self.net_score_4 = nn.Conv2d(in_channels=512, out_channels=1, kernel_size=1, stride=1, padding=0)
-		self.net_score_5 = nn.Conv2d(in_channels=512, out_channels=1, kernel_size=1, stride=1, padding=0)
+		self.netScoreOne = nn.Conv2d(in_channels=64, out_channels=1, kernel_size=1, stride=1, padding=0)
+		self.netScoreTwo = nn.Conv2d(in_channels=128, out_channels=1, kernel_size=1, stride=1, padding=0)
+		self.netScoreThr = nn.Conv2d(in_channels=256, out_channels=1, kernel_size=1, stride=1, padding=0)
+		self.netScoreFou = nn.Conv2d(in_channels=512, out_channels=1, kernel_size=1, stride=1, padding=0)
+		self.netScoreFiv = nn.Conv2d(in_channels=512, out_channels=1, kernel_size=1, stride=1, padding=0)
 
-		self.net_combine = nn.Sequential(
+		self.netCombine = nn.Sequential(
 			nn.Conv2d(in_channels=5, out_channels=1, kernel_size=1, stride=1, padding=0),
 			nn.Sigmoid()
 		)
 
-		self.checkpoint = osp.join(osp.dirname(osp.abspath(__file__)), "hed-bsds500.pth")
-		self.load_state_dict(torch.load(self.checkpoint))
+		# self.checkpoint = osp.join(osp.dirname(osp.abspath(__file__)), "network-bsds500.pytorch")
+		# self.load_state_dict(torch.load(self.checkpoint))
+		self.model_url = 'http://content.sniklaus.com/github/pytorch-hed/network-bsds500.pytorch'
+		state_dict = torch.hub.load_state_dict_from_url(self.model_url)
+		self.load_state_dict({ k.replace('module', 'net'): w for k, w in state_dict.items() })
 		self.to(self.device)
 
 	def forward(self, img):
@@ -108,25 +112,25 @@ class HEDNet(nn.Module):
 
 		img = torch.cat([ b, g, r ], 1)
 
-		fs1 = self.net_vgg_fs1(img)
-		fs2 = self.net_vgg_fs2(fs1)
-		fs3 = self.net_vgg_fs3(fs2)
-		fs4 = self.net_vgg_fs4(fs3)
-		fs5 = self.net_vgg_fs5(fs4)
+		fs1 = self.netVggOne(img)
+		fs2 = self.netVggTwo(fs1)
+		fs3 = self.netVggThr(fs2)
+		fs4 = self.netVggFou(fs3)
+		fs5 = self.netVggFiv(fs4)
 
-		s1 = self.net_score_1(fs1)
-		s2 = self.net_score_2(fs2)
-		s3 = self.net_score_3(fs3)
-		s4 = self.net_score_4(fs4)
-		s5 = self.net_score_5(fs5)
+		s1 = self.netScoreOne(fs1)
+		s2 = self.netScoreTwo(fs2)
+		s3 = self.netScoreThr(fs3)
+		s4 = self.netScoreFou(fs4)
+		s5 = self.netScoreFiv(fs5)
 
-		s1 = nn.functional.interpolate(input=s1, size=(img.shape[2], img.shape[3]), mode='bilinear', align_corners=False)
-		s2 = nn.functional.interpolate(input=s2, size=(img.shape[2], img.shape[3]), mode='bilinear', align_corners=False)
-		s3 = nn.functional.interpolate(input=s3, size=(img.shape[2], img.shape[3]), mode='bilinear', align_corners=False)
-		s4 = nn.functional.interpolate(input=s4, size=(img.shape[2], img.shape[3]), mode='bilinear', align_corners=False)
-		s5 = nn.functional.interpolate(input=s5, size=(img.shape[2], img.shape[3]), mode='bilinear', align_corners=False)
+		s1 = F.interpolate(input=s1, size=(img.shape[2], img.shape[3]), mode='bilinear', align_corners=False)
+		s2 = F.interpolate(input=s2, size=(img.shape[2], img.shape[3]), mode='bilinear', align_corners=False)
+		s3 = F.interpolate(input=s3, size=(img.shape[2], img.shape[3]), mode='bilinear', align_corners=False)
+		s4 = F.interpolate(input=s4, size=(img.shape[2], img.shape[3]), mode='bilinear', align_corners=False)
+		s5 = F.interpolate(input=s5, size=(img.shape[2], img.shape[3]), mode='bilinear', align_corners=False)
 
-		return self.net_combine(torch.cat([ s1, s2, s3, s4, s5 ], 1)), ( s1, s2, s3, s4, s5 )
+		return self.netCombine(torch.cat([ s1, s2, s3, s4, s5 ], 1)), ( s1, s2, s3, s4, s5 )
 
 	def predict(self, input_img_test):
 		input_img_test  = Processor.forward(input_img_test)

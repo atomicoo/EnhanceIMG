@@ -716,8 +716,8 @@ def load_vggnet(model='vgg16', gpu_ids=[], **kwargs):
 
 def vgg_preprocess(batch, opt):
     tensortype = type(batch.data)
-    (r, g, b) = torch.chunk(batch, 3, dim = 1)
-    batch = torch.cat((b, g, r), dim = 1)  # convert RGB to BGR
+    (r, g, b) = torch.chunk(batch, 3, dim=1)
+    batch = torch.cat((b, g, r), dim=1)  # convert RGB to BGR
     batch = (batch + 1) * 255 * 0.5  # [-1, 1] -> [0, 255]
     if opt.vgg_mean:
         mean = tensortype(batch.data.size())
@@ -733,6 +733,7 @@ class PerceptualLoss(nn.Module):
         super(PerceptualLoss, self).__init__()
         self.opt = opt
         self.vgg = vgg
+        vgg.eval()
         self._set_forward_hooks_for_output(opt.vgg_choose)
         self.instancenorm = nn.InstanceNorm2d(512, affine=False)
 
@@ -769,31 +770,31 @@ class PerceptualLoss(nn.Module):
                 vgg_fts_idx_idx = 0
 
 
-class FCNNet(nn.Module):
+class FCN32s(nn.Module):
     """There are some difference from original fcn
 
     References:
+        https://github.com/wkentaro/pytorch-fcn/blob/master/torchfcn/models/fcn32s.py
         https://github.com/GitHberChen/FCN-Pytorch/blob/master/src/model/fcn.py
     """
 
     map_features = {
-        'vgg16': [  'conv1_1', 'conv1_1_bn', 'conv1_1_bn', 'relu1_1', 'conv1_2', 'conv1_2_bn', 'relu1_2', 'pool1',
-                    'conv2_1', 'conv2_1_bn', 'conv2_1_bn', 'relu2_1', 'conv2_2', 'conv2_2_bn', 'relu2_2', 'pool2',
-                    'conv3_1', 'conv3_1_bn', 'relu3_1', 'conv3_2', 'conv3_2_bn', 'relu3_2', 'conv3_3', 'conv3_3_bn', 'relu3_3', 'pool3',
-                    'conv4_1', 'conv4_1_bn', 'relu4_1', 'conv4_2', 'conv4_2_bn', 'relu4_2', 'conv4_3', 'conv4_3_bn', 'relu4_3', 'pool4',
-                    'conv5_1', 'conv5_1_bn', 'relu5_1', 'conv5_2', 'conv5_2_bn', 'relu5_2', 'conv5_3', 'conv5_3_bn', 'relu5_3', 'pool5'  ],
+        'vgg16': [  'conv1_1', 'relu1_1', 'conv1_2', 'relu1_2', 'pool1',
+                    'conv2_1', 'relu2_1', 'conv2_2', 'relu2_2', 'pool2',
+                    'conv3_1', 'relu3_1', 'conv3_2', 'relu3_2', 'conv3_3', 'relu3_3', 'pool3',
+                    'conv4_1', 'relu4_1', 'conv4_2', 'relu4_2', 'conv4_3', 'relu4_3', 'pool4',
+                    'conv5_1', 'relu5_1', 'conv5_2', 'relu5_2', 'conv5_3', 'relu5_3', 'pool5'  ],
     }
 
-    def __init__(self, n_class=21, pretrained=True, model='fcn32s',
-                 backbone='vgg16', pretrained_base=True,
+    def __init__(self, n_class=21, pretrained=True, backbone='vgg16', pretrained_base=True,
                  requires_grad=False, show_params=False):
-        super(FCNNet, self).__init__()
+        super(FCN32s, self).__init__()
 
-        try:
+        if backbone in FCN32s.map_features:
             self.backbone = backbone
             pretrained_base = not pretrained and pretrained_base
             vggnet = VGGNet(pretrained=pretrained_base, model=backbone, remove_fc=True)
-        except KeyError:
+        else:
             raise RuntimeError('unknown backbone: {}'.format(backbone))
         self.copy_weights_from_vgg(vggnet)
 
@@ -811,7 +812,7 @@ class FCNNet(nn.Module):
         if pretrained:
             self.load_state_dict(torch.load("./fcn32s_from_caffe.pth"))
         else:
-            self._initialize_weights()
+            self._initialize_weights(not pretrained_base)
 
         if not requires_grad:
             for param in self.parameters():
@@ -840,33 +841,29 @@ class FCNNet(nn.Module):
 
         return torch.from_numpy(weight).float()
 
-    def _initialize_weights(self):
+    def _initialize_weights(self, init_backbone=False):
         for name, m in self.named_modules():
-            if int(name[4]) <= 5:
-                print(name)
-                continue
+            # whether init the backbone or not
+            if not init_backbone and len(name)>=5:
+                if name[4].isdigit() and int(name[4]) <= 5:
+                    continue
             if isinstance(m, nn.Conv2d):
                 m.weight.data.zero_()
                 if m.bias is not None:
                     m.bias.data.zero_()
             if isinstance(m, nn.ConvTranspose2d):
                 assert m.kernel_size[0] == m.kernel_size[1]
-                initial_weight = FCNNet.get_upsampling_weight(
+                initial_weight = FCN32s.get_upsampling_weight(
                     m.in_channels, m.out_channels, m.kernel_size[0])
                 m.weight.data.copy_(initial_weight)
 
     def copy_weights_from_vgg(self, vggnet):
-        features = FCNNet.map_features[self.backbone]
-        if not self.backbone.endswith('_bn'):
-            features = [ft for ft in features if not ft.endswith('_bn')]
+        features = FCN32s.map_features[self.backbone]
         vggnet_features = list(vggnet.features)
         assert len(features) == len(vggnet_features)
         for l1, l2 in zip(features, vggnet_features):
             if l1.startswith('conv'):
-                if not l1.endswith('_bn'):
-                    assert isinstance(l2, nn.Conv2d)
-                else:
-                    assert isinstance(l2, nn.BatchNorm2d)
+                assert isinstance(l2, nn.Conv2d)
             if l1.startswith('relu'):
                 assert isinstance(l2, nn.ReLU)
             if l1.startswith('pool'):
@@ -874,7 +871,29 @@ class FCNNet(nn.Module):
             setattr(self, l1, l2)
 
     def forward(self, x):
-        h = self.backbone(x)
+        h = x
+        h = self.relu1_1(self.conv1_1(h))
+        h = self.relu1_2(self.conv1_2(h))
+        h = self.pool1(h)  # 1/2
+
+        h = self.relu2_1(self.conv2_1(h))
+        h = self.relu2_2(self.conv2_2(h))
+        h = self.pool2(h)  # 1/4
+
+        h = self.relu3_1(self.conv3_1(h))
+        h = self.relu3_2(self.conv3_2(h))
+        h = self.relu3_3(self.conv3_3(h))
+        h = self.pool3(h)  # 1/8
+
+        h = self.relu4_1(self.conv4_1(h))
+        h = self.relu4_2(self.conv4_2(h))
+        h = self.relu4_3(self.conv4_3(h))
+        h = self.pool4(h)  # 1/16
+
+        h = self.relu5_1(self.conv5_1(h))
+        h = self.relu5_2(self.conv5_2(h))
+        h = self.relu5_3(self.conv5_3(h))
+        h = self.pool5(h)  # 1/32
 
         h = self.relu6(self.fc6(h))
         h = self.drop6(h)
@@ -883,6 +902,7 @@ class FCNNet(nn.Module):
         h = self.drop7(h)
 
         h = self.score_fr(h)
+
         h = self.upscore(h)
         h = h[:, :, 19:19 + x.size(2), 19:19 + x.size(3)].contiguous()
 
@@ -891,7 +911,7 @@ class FCNNet(nn.Module):
 
 def load_fcnnet(model='fcn32s', gpu_ids=[], **kwargs):
     """Load pretrained FCNNet model."""
-    fcn = FCNNet(model='fcn32s', requires_grad=False, **kwargs)
+    fcn = FCN32s(requires_grad=False, **kwargs)
 
     if len(gpu_ids) and torch.cuda.is_available():
         fcn.to(gpu_ids[0])
@@ -905,6 +925,7 @@ class SemanticLoss(nn.Module):
         super(SemanticLoss, self).__init__()
         self.opt = opt
         self.fcn = fcn
+        fcn.eval()
         self.instancenorm = nn.InstanceNorm2d(21, affine=False)
 
     def compute_fcn_loss(self, source, target):

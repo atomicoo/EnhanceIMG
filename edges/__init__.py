@@ -8,6 +8,11 @@ def easy_laplacian(img, ksize=3):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     return cv2.Laplacian(gray, cv2.CV_8U, ksize=ksize)
 
+def easy_LoG(img, ksize=3, sigma=0):
+    img = cv2.GaussianBlur(img, (ksize, ksize), sigmaX=sigma, sigmaY=sigma)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    return cv2.Laplacian(gray, cv2.CV_8U, ksize=ksize)
+
 def easy_sobel(img, ksize=3, mode='xy'):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     sobelX = cv2.Sobel(gray, cv2.CV_8U, 1, 0, ksize=ksize)
