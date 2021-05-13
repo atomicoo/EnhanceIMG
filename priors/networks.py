@@ -298,12 +298,49 @@ class Concat(nn.Module):
 ##############################################################################
 
 
-class ResidualBlock(nn.Module):
+# class ResidualBlock(nn.Module):
+#     """Residual Basic Block"""
+
+#     def __init__(self, inplanes, planes, stride=1, norm_layer=None, act_func=None, 
+#                  downsample=None, residual=True):
+#         super(ResidualBlock, self).__init__()
+#         norm_layer = Normalize(norm_layer)
+#         act_func = NonLinear(act_func)
+#         layers = [ resnet.conv3x3(inplanes, planes, stride),
+#                    norm_layer(planes),
+#                    act_func(),
+#                    resnet.conv3x3(planes, planes),
+#                    norm_layer(planes) ]
+#         self.layers = nn.Sequential(*layers)
+#         self.downsample = downsample
+#         self.residual = residual
+
+#     def _match_shape(self, x1, size):
+#         if (x1.size(2) != size[2]) or (x1.size(3) != size[3]):
+#             dh = (x1.size(2) - size[2]) // 2
+#             dw = (x1.size(3) - size[3]) // 2
+#             x1 = x1[..., dh:dh+size[2], dw:dw+size[3]]
+#         return x1
+
+#     def forward(self, x):
+#         identity = x
+
+#         x = self.layers(x)
+#         if self.downsample:
+#             x = self.downsample(x)
+
+#         identity = self._match_shape(identity, x.size())
+#         if self.residual:
+#             x += identity
+
+#         return x
+
+
+class ResNetBlock(nn.Module):
     """Residual Basic Block"""
 
-    def __init__(self, inplanes, planes, stride=1, norm_layer=None, act_func=None, 
-                 downsample=None, residual=True):
-        super(ResidualBlock, self).__init__()
+    def __init__(self, inplanes, planes, stride=1, norm_layer=None, act_func=None):
+        super(ResNetBlock, self).__init__()
         norm_layer = Normalize(norm_layer)
         act_func = NonLinear(act_func)
         layers = [ resnet.conv3x3(inplanes, planes, stride),
@@ -312,6 +349,15 @@ class ResidualBlock(nn.Module):
                    resnet.conv3x3(planes, planes),
                    norm_layer(planes) ]
         self.layers = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.layers(x)
+
+
+class ResidualConnectionBlock(nn.Module):
+    def __init__(self, submodule=None, downsample=None, residual=True):
+        super(ResidualConnectionBlock, self).__init__()
+        self.submodule = submodule
         self.downsample = downsample
         self.residual = residual
 
@@ -325,7 +371,7 @@ class ResidualBlock(nn.Module):
     def forward(self, x):
         identity = x
 
-        x = self.layers(x)
+        x = self.submodule(x)
         if self.downsample:
             x = self.downsample(x)
 
@@ -347,7 +393,8 @@ class ResNet(nn.Module):
             NonLinear(act_func)()])
 
         blocks = [
-            block(channels, channels, norm_layer=norm_layer, act_func=act_func, residual=residual) 
+            # block(channels, channels, norm_layer=norm_layer, act_func=act_func, residual=residual)
+            ResidualConnectionBlock(block(channels, channels, norm_layer=norm_layer, act_func=act_func), residual=residual)
             for _ in range(num_blocks)]
         blocks += [
             resnet.conv3x3(channels, channels, stride=1), Normalize(norm_layer)(channels)]
@@ -373,23 +420,27 @@ class ResNet(nn.Module):
 
 
 ##############################################################################
-# UNet Network Classes
+# Skip Connection Network Classes
 ##############################################################################
 
 
-class UNetConv(nn.Module):
-    def __init__(self, inplanes, planes, 
+class MultiConvBlock(nn.Module):
+    def __init__(self, inplanes, planes, n_layers=2, 
                  norm_layer=None, act_func=None, bias=True, padding_mode='reflect'):
-        super(UNetConv, self).__init__()
+        super(MultiConvBlock, self).__init__()
 
         layers = [
             ConvBlock(inplanes, planes, 3, bias=bias, padding_mode=padding_mode),
             Normalize(norm_layer)(planes),
             NonLinear(act_func)(),
-            ConvBlock(planes, planes, 3, bias=bias, padding_mode=padding_mode),
-            Normalize(norm_layer)(planes),
-            NonLinear(act_func)()
         ]
+
+        for _ in range(n_layers-1):
+            layers += [
+                ConvBlock(planes, planes, 3, bias=bias, padding_mode=padding_mode),
+                Normalize(norm_layer)(planes),
+                NonLinear(act_func)()
+            ]
 
         self.layers = nn.Sequential(*layers)
 
@@ -397,12 +448,105 @@ class UNetConv(nn.Module):
         return self.layers(x)
 
 
-class UNetDown(nn.Module):
-    def __init__(self, inplanes, planes, 
-                 norm_layer=None, act_func=None, bias=True, padding_mode='reflect'):
-        super(UNetDown, self).__init__()
+# class UNetDown(nn.Module):
+#     def __init__(self, inplanes, planes, 
+#                  norm_layer=None, act_func=None, bias=True, padding_mode='reflect'):
+#         super(UNetDown, self).__init__()
 
-        self.conv = UNetConv(inplanes, planes, norm_layer=norm_layer, act_func=act_func, 
+#         self.conv = MultiConvBlock(inplanes, planes, norm_layer=norm_layer, act_func=act_func, 
+#                              bias=bias, padding_mode=padding_mode)
+#         self.down = nn.MaxPool2d(2, 2)
+
+#     def forward(self, x):
+#         return self.down(self.conv(x))
+
+
+# class UNetUp(nn.Module):
+#     def __init__(self, inplanes, planes, upsample_mode='deconv', 
+#                  norm_layer=None, act_func=None, bias=True, padding_mode='reflect'):
+#         super(UNetUp, self).__init__()
+
+#         if upsample_mode == 'deconv':
+#             self.up = nn.Sequential(
+#                 nn.ConvTranspose2d(inplanes, planes, 4, stride=2, padding=1))
+#         elif upsample_mode=='bilinear' or upsample_mode=='nearest':
+#             self.up = nn.Sequential(
+#                 nn.Upsample(scale_factor=2, mode=upsample_mode),
+#                 ConvBlock(inplanes, planes, 3, bias=bias, padding_mode=padding_mode))
+#         self.conv = MultiConvBlock(planes * 2, planes, norm_layer=norm_layer, act_func=act_func, 
+#                              bias=bias, padding_mode=padding_mode)
+
+#     def _match_shape(self, x1, size):
+#         if (x1.size(2) != size[2]) or (x1.size(3) != size[3]):
+#             dh = (x1.size(2) - size[2]) // 2
+#             dw = (x1.size(3) - size[3]) // 2
+#             x1 = x1[..., dh:dh+size[2], dw:dw+size[3]]
+#         return x1
+
+#     def forward(self, x, sup):
+#         x = self.up(x)
+#         sup = self._match_shape(sup, x.size())
+#         x = self.conv(torch.cat([x, sup], 1))
+#         return x
+
+
+# class UNet(nn.Module):
+#     def __init__(self, in_channels=3, out_channels=3, feature_scale=4, upsample_mode='deconv', 
+#                        padding_mode='zero', norm_layer='instance', act_func='relu', use_sigmoid=True, bias=True):
+#         super(UNet, self).__init__()
+
+#         self.feature_scale = feature_scale
+
+#         filters = [64, 128, 256, 512, 1024]
+#         filters = [x // self.feature_scale for x in filters]
+
+#         self.prenet = MultiConvBlock(in_channels, filters[0], norm_layer=norm_layer, act_func=act_func, 
+#                                bias=bias, padding_mode=padding_mode)
+        
+#         self.down1 = UNetDown(filters[0], filters[1], norm_layer=norm_layer, act_func=act_func, 
+#                               bias=bias, padding_mode=padding_mode)
+#         self.down2 = UNetDown(filters[1], filters[2], norm_layer=norm_layer, act_func=act_func, 
+#                               bias=bias, padding_mode=padding_mode)
+#         self.down3 = UNetDown(filters[2], filters[3], norm_layer=norm_layer, act_func=act_func, 
+#                               bias=bias, padding_mode=padding_mode)
+#         self.down4 = UNetDown(filters[3], filters[4], norm_layer=norm_layer, act_func=act_func, 
+#                               bias=bias, padding_mode=padding_mode)
+
+#         self.up4 = UNetUp(filters[4], filters[3], upsample_mode=upsample_mode, 
+#                           bias=bias, padding_mode=padding_mode)
+#         self.up3 = UNetUp(filters[3], filters[2], upsample_mode=upsample_mode, 
+#                           bias=bias, padding_mode=padding_mode)
+#         self.up2 = UNetUp(filters[2], filters[1], upsample_mode=upsample_mode, 
+#                           bias=bias, padding_mode=padding_mode)
+#         self.up1 = UNetUp(filters[1], filters[0], upsample_mode=upsample_mode, 
+#                           bias=bias, padding_mode=padding_mode)
+
+#         self.postnet = nn.Sequential(
+#             ConvBlock(filters[0], out_channels, 1, bias=bias, padding_mode=padding_mode),
+#             NonLinear('sigmoid' if use_sigmoid else 'none')())
+
+#     def forward(self, x):
+#         down0 = self.prenet(x)
+#         down1 = self.down1(down0)
+#         down2 = self.down2(down1)
+#         down3 = self.down3(down2)
+#         down4 = self.down4(down3)
+
+#         up4 = self.up4(down4, down3)
+#         up3 = self.up3(up4, down2)
+#         up2 = self.up2(up3, down1)
+#         up1 = self.up1(up2, down0)
+#         up0 = self.postnet(up1)
+
+#         return up0
+
+
+class SkipDown(nn.Module):
+    def __init__(self, inplanes, planes, downsample_mode='stride',
+                 norm_layer=None, act_func=None, bias=True, padding_mode='reflect'):
+        super(SkipDown, self).__init__()
+
+        self.conv = MultiConvBlock(inplanes, planes, norm_layer=norm_layer, act_func=act_func, 
                              bias=bias, padding_mode=padding_mode)
         self.down = nn.MaxPool2d(2, 2)
 
@@ -410,10 +554,10 @@ class UNetDown(nn.Module):
         return self.down(self.conv(x))
 
 
-class UNetUp(nn.Module):
+class SkipUp(nn.Module):
     def __init__(self, inplanes, planes, upsample_mode='deconv', 
                  norm_layer=None, act_func=None, bias=True, padding_mode='reflect'):
-        super(UNetUp, self).__init__()
+        super(SkipUp, self).__init__()
 
         if upsample_mode == 'deconv':
             self.up = nn.Sequential(
@@ -422,72 +566,81 @@ class UNetUp(nn.Module):
             self.up = nn.Sequential(
                 nn.Upsample(scale_factor=2, mode=upsample_mode),
                 ConvBlock(inplanes, planes, 3, bias=bias, padding_mode=padding_mode))
-        self.conv = UNetConv(planes * 2, planes, norm_layer=norm_layer, act_func=act_func, 
+        self.conv = MultiConvBlock(planes, planes, norm_layer=norm_layer, act_func=act_func, 
                              bias=bias, padding_mode=padding_mode)
 
-    def _match_shape(self, x1, size):
-        if (x1.size(2) != size[2]) or (x1.size(3) != size[3]):
-            dh = (x1.size(2) - size[2]) // 2
-            dw = (x1.size(3) - size[3]) // 2
-            x1 = x1[..., dh:dh+size[2], dw:dw+size[3]]
-        return x1
-
-    def forward(self, x, sup):
-        x = self.up(x)
-        sup = self._match_shape(sup, x.size())
-        x = self.conv(torch.cat([x, sup], 1))
-        return x
+    def forward(self, x):
+        return self.conv(self.up(x))
 
 
-class UNet(nn.Module):
-    def __init__(self, in_channels=3, out_channels=3, feature_scale=4, upsample_mode='deconv', 
-                       padding_mode='zero', norm_layer='instance', act_func='relu', use_sigmoid=True, bias=True):
-        super(UNet, self).__init__()
+class SkipConnectionBlock(nn.Module):
 
-        self.feature_scale = feature_scale
+    def __init__(self, in_channels, out_channels, channels, skip_channels, mode='skip',
+                 submodule=None, upsample_mode='deconv', downsample_mode='stride', 
+                 kernel_size=3, skip_kernel_size=1, norm_layer=None, act_func=None, 
+                 bias=True, padding_mode='reflect', use_conv1x1=True):
+        super(SkipConnectionBlock, self).__init__()
 
-        filters = [64, 128, 256, 512, 1024]
-        filters = [x // self.feature_scale for x in filters]
+        down = SkipDown(in_channels, channels, downsample_mode=downsample_mode, norm_layer=norm_layer, act_func=act_func, 
+                        bias=bias, padding_mode=padding_mode)
+        up = SkipUp(channels, channels, upsample_mode=upsample_mode, norm_layer=norm_layer, act_func=act_func, 
+                    bias=bias, padding_mode=padding_mode)
 
-        self.prenet = UNetConv(in_channels, filters[0], norm_layer=norm_layer, act_func=act_func, 
-                               bias=bias, padding_mode=padding_mode)
-        
-        self.down1 = UNetDown(filters[0], filters[1], norm_layer=norm_layer, act_func=act_func, 
-                              bias=bias, padding_mode=padding_mode)
-        self.down2 = UNetDown(filters[1], filters[2], norm_layer=norm_layer, act_func=act_func, 
-                              bias=bias, padding_mode=padding_mode)
-        self.down3 = UNetDown(filters[2], filters[3], norm_layer=norm_layer, act_func=act_func, 
-                              bias=bias, padding_mode=padding_mode)
-        self.down4 = UNetDown(filters[3], filters[4], norm_layer=norm_layer, act_func=act_func, 
-                              bias=bias, padding_mode=padding_mode)
+        # deeper = nn.Sequential(*[down, submodule, up])
+        deeper = nn.Sequential(*filter(lambda x: x is not None, [down, submodule, up]))
 
-        self.up4 = UNetUp(filters[4], filters[3], upsample_mode=upsample_mode, 
-                          bias=bias, padding_mode=padding_mode)
-        self.up3 = UNetUp(filters[3], filters[2], upsample_mode=upsample_mode, 
-                          bias=bias, padding_mode=padding_mode)
-        self.up2 = UNetUp(filters[2], filters[1], upsample_mode=upsample_mode, 
-                          bias=bias, padding_mode=padding_mode)
-        self.up1 = UNetUp(filters[1], filters[0], upsample_mode=upsample_mode, 
-                          bias=bias, padding_mode=padding_mode)
+        if mode == 'skip':
+            skip = nn.Sequential(
+                ConvBlock(in_channels, skip_channels, skip_kernel_size, bias=bias, padding_mode=padding_mode),
+                Normalize(norm_layer)(skip_channels),
+                NonLinear(act_func)()
+            )
+        elif mode == 'unet':
+            skip_channels = in_channels
+            skip = nn.Sequential(nn.Identity())
+
+        blocks = [ Concat(1, skip, deeper) ]
+
+        blocks += [
+            ConvBlock(channels+skip_channels, channels, kernel_size, bias=bias, padding_mode=padding_mode),
+            Normalize(norm_layer)(channels),
+            NonLinear(act_func)() ]
+        if use_conv1x1:
+            blocks += [
+                ConvBlock(channels, out_channels, 1, bias=bias, padding_mode=padding_mode),
+                Normalize(norm_layer)(out_channels),
+                NonLinear(act_func)() ]
+
+        self.blocks = nn.Sequential(*blocks)
+
+    def forward(self, x):
+        return self.blocks(x)
+
+
+class SkipNet(nn.Module):
+    def __init__(self, in_channels, out_channels, skip_channels=4, nf=16, mode='skip',
+                 norm_layer=None, use_sigmoid=True, upsample_mode='deconv', downsample_mode='stride'):
+        super(SkipNet, self).__init__()
+
+        block = SkipConnectionBlock(nf * 8, nf * 8, nf * 8, skip_channels=skip_channels, mode=mode,
+                                    submodule=None, upsample_mode=upsample_mode, downsample_mode=downsample_mode, norm_layer=norm_layer)
+        block = SkipConnectionBlock(nf * 4, nf * 4, nf * 8, skip_channels=skip_channels, mode=mode,
+                                    submodule=block, upsample_mode=upsample_mode, downsample_mode=downsample_mode, norm_layer=norm_layer)
+        block = SkipConnectionBlock(nf * 2, nf * 2, nf * 4, skip_channels=skip_channels, mode=mode,
+                                    submodule=block, upsample_mode=upsample_mode, downsample_mode=downsample_mode, norm_layer=norm_layer)
+        block = SkipConnectionBlock(nf * 1, nf * 1, nf * 2, skip_channels=skip_channels, mode=mode,
+                                    submodule=block, upsample_mode=upsample_mode, downsample_mode=downsample_mode, norm_layer=norm_layer)
+        block = SkipConnectionBlock(in_channels, nf * 1, nf * 1, skip_channels=skip_channels, mode=mode,
+                                    submodule=block, upsample_mode=upsample_mode, downsample_mode=downsample_mode, norm_layer=norm_layer)
+
+        self.block = block
 
         self.postnet = nn.Sequential(
-            ConvBlock(filters[0], out_channels, 1, bias=bias, padding_mode=padding_mode),
+            ConvBlock(nf * 1, out_channels, 1),
             NonLinear('sigmoid' if use_sigmoid else 'none')())
 
     def forward(self, x):
-        down0 = self.prenet(x)
-        down1 = self.down1(down0)
-        down2 = self.down2(down1)
-        down3 = self.down3(down2)
-        down4 = self.down4(down3)
-
-        up4 = self.up4(down4, down3)
-        up3 = self.up3(up4, down2)
-        up2 = self.up2(up3, down1)
-        up1 = self.up1(up2, down0)
-        up0 = self.postnet(up1)
-
-        return up0
+        return self.postnet(self.block(x))
 
 
 ##############################################################################
