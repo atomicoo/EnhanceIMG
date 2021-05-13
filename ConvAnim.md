@@ -15,10 +15,10 @@ _N.B.: Blue maps are inputs, and cyan maps are outputs._
 
 <table style="width:100%; table-layout:fixed;">
   <tr>
-    <td><img width="150px" src="asserts/gif/no_padding_no_strides.gif"></td>
-    <td><img width="150px" src="asserts/gif/arbitrary_padding_no_strides.gif"></td>
-    <td><img width="150px" src="asserts/gif/same_padding_no_strides.gif"></td>
-    <td><img width="150px" src="asserts/gif/full_padding_no_strides.gif"></td>
+    <td><img width="150px" src="https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620902094-no_padding_no_strides.gif"></td>
+    <td><img width="150px" src="https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620902157-arbitrary_padding_no_strides.gif"></td>
+    <td><img width="150px" src="https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620902207-same_padding_no_strides.gif"></td>
+    <td><img width="150px" src="https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620902239-full_padding_no_strides.gif"></td>
   </tr>
   <tr>
     <td>No padding, no strides</td>
@@ -27,9 +27,9 @@ _N.B.: Blue maps are inputs, and cyan maps are outputs._
     <td>Full padding, no strides</td>
   </tr>
   <tr>
-    <td><img width="150px" src="asserts/gif/no_padding_strides.gif"></td>
-    <td><img width="150px" src="asserts/gif/padding_strides.gif"></td>
-    <td><img width="150px" src="asserts/gif/padding_strides_odd.gif"></td>
+    <td><img width="150px" src="https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620902287-no_padding_strides.gif"></td>
+    <td><img width="150px" src="https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620902345-padding_strides.gif"></td>
+    <td><img width="150px" src="https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620902378-padding_strides_odd.gif"></td>
     <td></td>
   </tr>
   <tr>
@@ -40,16 +40,17 @@ _N.B.: Blue maps are inputs, and cyan maps are outputs._
   </tr>
 </table>
 
+
 ## Transposed convolution animations
 
 _N.B.: Blue maps are inputs, and cyan maps are outputs._
 
 <table style="width:100%; table-layout:fixed;">
   <tr>
-    <td><img width="150px" src="asserts/gif/no_padding_no_strides_transposed.gif"></td>
-    <td><img width="150px" src="asserts/gif/arbitrary_padding_no_strides_transposed.gif"></td>
-    <td><img width="150px" src="asserts/gif/same_padding_no_strides_transposed.gif"></td>
-    <td><img width="150px" src="asserts/gif/full_padding_no_strides_transposed.gif"></td>
+    <td><img width="150px" src="https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620902426-no_padding_no_strides_transposed.gif"></td>
+    <td><img width="150px" src="https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620902476-arbitrary_padding_no_strides_transposed.gif"></td>
+    <td><img width="150px" src="https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620902516-same_padding_no_strides_transposed.gif"></td>
+    <td><img width="150px" src="https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620902551-full_padding_no_strides_transposed.gif"></td>
   </tr>
   <tr>
     <td>No padding, no strides, transposed</td>
@@ -58,9 +59,9 @@ _N.B.: Blue maps are inputs, and cyan maps are outputs._
     <td>Full padding, no strides, transposed</td>
   </tr>
   <tr>
-    <td><img width="150px" src="asserts/gif/no_padding_strides_transposed.gif"></td>
-    <td><img width="150px" src="asserts/gif/padding_strides_transposed.gif"></td>
-    <td><img width="150px" src="asserts/gif/padding_strides_odd_transposed.gif"></td>
+    <td><img width="150px" src="https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620902588-no_padding_strides_transposed.gif"></td>
+    <td><img width="150px" src="https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620902631-padding_strides_transposed.gif"></td>
+    <td><img width="150px" src="https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620902694-padding_strides_odd_transposed.gif"></td>
     <td></td>
   </tr>
   <tr>
@@ -71,18 +72,20 @@ _N.B.: Blue maps are inputs, and cyan maps are outputs._
   </tr>
 </table>
 
+
 ## Dilated convolution animations
 
 _N.B.: Blue maps are inputs, and cyan maps are outputs._
 
 <table style="width:25%"; table-layout:fixed;>
   <tr>
-    <td><img width="150px" src="asserts/gif/dilation.gif"></td>
+    <td><img width="150px" src="https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1620902735-dilation.gif"></td>
   </tr>
   <tr>
     <td>No padding, no stride, dilation</td>
   </tr>
 </table>
+
 
 ## References
 
