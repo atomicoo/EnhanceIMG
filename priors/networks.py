@@ -575,7 +575,7 @@ class SkipUp(nn.Module):
 
 class SkipConnectionBlock(nn.Module):
 
-    def __init__(self, in_channels, out_channels, channels, skip_channels, mode='skip',
+    def __init__(self, in_channels, out_channels, channels, skip_channels, use_skip=True, mode='skip',
                  submodule=None, upsample_mode='deconv', downsample_mode='stride', 
                  kernel_size=3, skip_kernel_size=1, norm_layer=None, act_func=None, 
                  bias=True, padding_mode='reflect', use_conv1x1=True):
@@ -589,17 +589,21 @@ class SkipConnectionBlock(nn.Module):
         # deeper = nn.Sequential(*[down, submodule, up])
         deeper = nn.Sequential(*filter(lambda x: x is not None, [down, submodule, up]))
 
-        if mode == 'skip':
-            skip = nn.Sequential(
-                ConvBlock(in_channels, skip_channels, skip_kernel_size, bias=bias, padding_mode=padding_mode),
-                Normalize(norm_layer)(skip_channels),
-                NonLinear(act_func)()
-            )
-        elif mode == 'unet':
-            skip_channels = in_channels
-            skip = nn.Sequential(nn.Identity())
+        if use_skip:
+            if mode == 'skip':
+                skip = nn.Sequential(
+                    ConvBlock(in_channels, skip_channels, skip_kernel_size, bias=bias, padding_mode=padding_mode),
+                    Normalize(norm_layer)(skip_channels),
+                    NonLinear(act_func)()
+                )
+            elif mode == 'unet':
+                skip_channels = in_channels
+                skip = nn.Sequential(nn.Identity())
 
-        blocks = [ Concat(1, skip, deeper) ]
+            blocks = [ Concat(1, skip, deeper) ]
+        else:
+            skip_channels = 0
+            blocks = [ deeper ]
 
         blocks += [
             ConvBlock(channels+skip_channels, channels, kernel_size, bias=bias, padding_mode=padding_mode),
@@ -618,19 +622,22 @@ class SkipConnectionBlock(nn.Module):
 
 
 class SkipNet(nn.Module):
-    def __init__(self, in_channels, out_channels, skip_channels=4, nf=16, mode='skip',
+    def __init__(self, in_channels, out_channels, skip_channels=4, nf=16, skip_flags=[True]*5, mode='skip', more_blocks=0,
                  norm_layer=None, use_sigmoid=True, upsample_mode='deconv', downsample_mode='stride'):
         super(SkipNet, self).__init__()
 
-        block = SkipConnectionBlock(nf * 8, nf * 8, nf * 8, skip_channels=skip_channels, mode=mode,
+        block = SkipConnectionBlock(nf * 8, nf * 8, nf * 8, skip_channels=skip_channels, use_skip=skip_flags[4], mode=mode,
                                     submodule=None, upsample_mode=upsample_mode, downsample_mode=downsample_mode, norm_layer=norm_layer)
-        block = SkipConnectionBlock(nf * 4, nf * 4, nf * 8, skip_channels=skip_channels, mode=mode,
+        for _ in range(more_blocks):
+            block = SkipConnectionBlock(nf * 8, nf * 8, nf * 8, skip_channels=skip_channels, use_skip=skip_flags[4], mode=mode,
+                                        submodule=block, upsample_mode=upsample_mode, downsample_mode=downsample_mode, norm_layer=norm_layer)
+        block = SkipConnectionBlock(nf * 4, nf * 4, nf * 8, skip_channels=skip_channels, use_skip=skip_flags[3], mode=mode,
                                     submodule=block, upsample_mode=upsample_mode, downsample_mode=downsample_mode, norm_layer=norm_layer)
-        block = SkipConnectionBlock(nf * 2, nf * 2, nf * 4, skip_channels=skip_channels, mode=mode,
+        block = SkipConnectionBlock(nf * 2, nf * 2, nf * 4, skip_channels=skip_channels, use_skip=skip_flags[2], mode=mode,
                                     submodule=block, upsample_mode=upsample_mode, downsample_mode=downsample_mode, norm_layer=norm_layer)
-        block = SkipConnectionBlock(nf * 1, nf * 1, nf * 2, skip_channels=skip_channels, mode=mode,
+        block = SkipConnectionBlock(nf * 1, nf * 1, nf * 2, skip_channels=skip_channels, use_skip=skip_flags[1], mode=mode,
                                     submodule=block, upsample_mode=upsample_mode, downsample_mode=downsample_mode, norm_layer=norm_layer)
-        block = SkipConnectionBlock(in_channels, nf * 1, nf * 1, skip_channels=skip_channels, mode=mode,
+        block = SkipConnectionBlock(in_channels, nf * 1, nf * 1, skip_channels=skip_channels, use_skip=skip_flags[0], mode=mode,
                                     submodule=block, upsample_mode=upsample_mode, downsample_mode=downsample_mode, norm_layer=norm_layer)
 
         self.block = block

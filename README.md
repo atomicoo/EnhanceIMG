@@ -11,7 +11,7 @@
 |--- asserts/
 |--- awegan/      # GAN相关算法
      |--- datasets/
-     |--- models/
+     |--- models/         # CycleGAN/Pix2Pix/SelfGAN
      |--- options/
      |--- util/
      |--- __init__.py
@@ -23,10 +23,16 @@
 |--- histeq/      # 直方图均衡算法
 |--- noises/      # 噪声
 |--- priors/      # 自然图像先验信息
+     |--- __init__.py
+     |--- denoising.py
+     |--- inpainting.py
+     |--- networks.py     # ResNet/SkipNet/UNet
+     |--- restoration.py
+     |--- ...
 |--- retinex/     # Retinex系列算法
      |--- __init__.py
      |--- enhancer.py
-     |--- retinex_net.py
+     |--- retinex_net.py  # RetinexNet
      |--- ...
 |--- utils/       # 一些方法
 |--- .gitignore
@@ -34,7 +40,7 @@
 |--- LICENSE
 |--- Madison.png
 |--- README.md    # 说明文档
-|--- requirements.txt  # 依赖文件
+|--- requirements.txt     # 依赖文件
 ```
 
 ## 简单示例
@@ -89,7 +95,7 @@
 
 ![retinex](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/04/1619614304-retinex.png)
 
-**Retinex 增强**（原图|AttnMSR|AttnMSR+MSS）
+**Retinex 增强**（原图|AttnMSR|AttnMSR+MSS）（Mine）
 
 ![enlighten](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/04/1619614316-enlighten.png)
 
@@ -140,11 +146,13 @@
 
 ## TODO
 
+- [x] AttnMSR 图像增强算法（Mine）
 - [x] RetinexNet 低光增强模型
+- [x] ResNet / SkipNet / UNet
+- [ ] Deep Image Prior（自然图像先验信息）
 - [x] Pix2Pix 模型用于图像增强
-- [ ] Pix2Pix 模型用于图像修复
 - [x] CycleGan 模型用于图像增强
-- [ ] SelfGAN 图像增强模型（Mine）
+- [ ] SelfGAN 图像增强模型（Mine，完善中）
 
 ## 欢迎交流
 

@@ -6,7 +6,7 @@ try:
     from .datasets import create_dataset
     from .models import create_model
     from .util.visualizer import Visualizer
-except Exception:
+except ImportError:
     from options import TrainOptions
     from datasets import create_dataset
     from models import create_model
