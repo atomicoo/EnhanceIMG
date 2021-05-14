@@ -99,6 +99,10 @@
 
 ![enlighten](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/04/1619614316-enlighten.png)
 
+### 自然图像先验
+
+**降噪**（噪声图|降噪1|降噪2）TODO：待补图
+
 ### 神经网络
 
 **RetinexNet**（原图|RetinexNet）
@@ -131,18 +135,22 @@
 
 ## 参考资料
 
-- [Multiscale Retinex](http://www.ipol.im/pub/art/2014/107/)
-- [An automated multi Scale Retinex with Color Restoration for image enhancement](http://ieeexplore.ieee.org/document/6176791/)
-- [A multiscale retinex for bridging the gap between color images and the human observation of scenes](http://ieeexplore.ieee.org/document/597272/)
-- [Deep Retinex Decomposition for Low-Light Enhancement](https://arxiv.org/abs/1808.04560)
-- [Image-to-Image Translation with Conditional Adversarial Networks](https://arxiv.org/abs/1611.07004)
-- [Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks](https://arxiv.org/abs/1703.10593)
-- [High-Resolution Image Synthesis and Semantic Manipulation with Conditional GANs](https://arxiv.org/abs/1711.11585)
-- [Toward Multimodal Image-to-Image Translation](https://arxiv.org/abs/1711.11586)
-- [Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks](https://arxiv.org/abs/1511.06434)
-- [Deep Residual Learning for Image Recognition](https://arxiv.org/abs/1512.03385)
-- [U-Net: Convolutional Networks for Biomedical Image Segmentation](https://arxiv.org/abs/1505.04597)
-- [Fully Convolutional Networks for Semantic Segmentation](https://arxiv.org/abs/1605.06211v1)
+- Retinex
+  - [Multiscale Retinex](http://www.ipol.im/pub/art/2014/107/)
+  - [An automated multi Scale Retinex with Color Restoration for image enhancement](http://ieeexplore.ieee.org/document/6176791/)
+  - [A multiscale retinex for bridging the gap between color images and the human observation of scenes](http://ieeexplore.ieee.org/document/597272/)
+  - [Deep Retinex Decomposition for Low-Light Enhancement](https://arxiv.org/abs/1808.04560)
+- Image Prior
+  - [Deep Image Prior](https://dmitryulyanov.github.io/deep_image_prior)
+- GAN network
+  - [Image-to-Image Translation with Conditional Adversarial Networks](https://arxiv.org/abs/1611.07004)
+  - [Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks](https://arxiv.org/abs/1703.10593)
+  - [High-Resolution Image Synthesis and Semantic Manipulation with Conditional GANs](https://arxiv.org/abs/1711.11585)
+  - [Toward Multimodal Image-to-Image Translation](https://arxiv.org/abs/1711.11586)
+  - [Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks](https://arxiv.org/abs/1511.06434)
+  - [Deep Residual Learning for Image Recognition](https://arxiv.org/abs/1512.03385)
+  - [U-Net: Convolutional Networks for Biomedical Image Segmentation](https://arxiv.org/abs/1505.04597)
+  - [Fully Convolutional Networks for Semantic Segmentation](https://arxiv.org/abs/1605.06211v1)
 
 ## TODO
 
