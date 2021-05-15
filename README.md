@@ -101,7 +101,9 @@
 
 ### 自然图像先验
 
-**降噪**（噪声图|降噪1|降噪2）TODO：待补图
+**降噪**（噪声图|降噪1|降噪2）
+
+![prior-denoising](https://cdn.jsdelivr.net/gh/atomicoo/picture-bed@latest/2021/05/1621076456-prior-denoising.png)
 
 ### 神经网络
 

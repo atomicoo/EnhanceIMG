@@ -5,7 +5,7 @@ import torch.optim as optim
 from skimage.metrics import peak_signal_noise_ratio
 # from skimage.metrics import structural_similarity
 
-try: 
+try:
     from .datasets import *
     from .networks import *
 except ImportError:
@@ -25,28 +25,28 @@ figsize = 5
 lr = 0.01
 show_freq = 300
 exp_weight = 0.99
-num_iter = 3000
+num_iter = 4805
 
 # %%
-fpath = "../Madison.png"
-img_pil, img_np = load_image(fpath, imsize=imsize)
-# img_np = random_crop(img_np, (384, 512))
-# img_np = center_crop(img_np, (384, 512))
-img_noisy_pil, img_noisy_np = get_noisy_image(img_np, sigma_)
+# fpath = "../Madison.png"
+# img_pil, img_np = load_image(fpath, imsize=imsize)
+# # img_np = random_crop(img_np, (384, 512))
+# # img_np = center_crop(img_np, (384, 512))
+# img_noisy_pil, img_noisy_np = get_noisy_image(img_np, sigma_)
 
 # %%
-# fpath = "./data/snail.jpg"
-# img_noisy_pil, img_noisy_np = load_image(fpath, imsize=imsize)
-# # img_noisy_np = random_crop(img_noisy_np, (256, 384))
-# img_noisy_np = center_crop(img_noisy_np, (256, 384))
-# img_np = img_noisy_np  # no ground-truth image of snail.jpg
+fpath = "./data/snail.jpg"
+img_noisy_pil, img_noisy_np = load_image(fpath, imsize=imsize)
+# img_noisy_np = random_crop(img_noisy_np, (256, 384))
+img_noisy_np = center_crop(img_noisy_np, (256, 384))
+img_np = img_noisy_np  # no ground-truth image of snail.jpg
 
 # %%
 grid = plot_image_grid([img_np, img_noisy_np], nrow=2, factor=0)
 
 # %%
-# net = SkipNet(3, 3, skip_flags=list(map(bool,[0,0,0,1,1]))).to(device)
-net = SkipNet(3, 3, skip_flags=list(map(bool,[1,1,1,1,1])), mode='unet').to(device)
+net = SkipNet(3, 3, nf=8, nf_ratios=[1,2,4,8,8], skip_channels=[0,0,0,4,4], skip_mode='skip', 
+              upsample_mode='bilinear').to(device)
 # Compute number of parameters
 s = sum([np.prod(list(p.size())) for p in net.parameters()]); 
 print ('Number of params: %d' % s)
@@ -108,6 +108,6 @@ for i in range(num_iter):
 
         cat_img = np.concatenate([img_noisy_np, output_np, output_avg_np], axis=2)
         cat_img = np_to_pil(cat_img)
-        cat_img.save(f"demo{i}.png")
+        cat_img.save(f"demo{i:04d}.png")
 
 # %%
